@@ -1,11 +1,12 @@
 #!/usr/bin/env python
 # -*- coding:UTF-8 -*-
 #地图编辑器回放界面,单位定义
-
+#不用item.contains(QPointF)改用view.items(QPoint)来判断
+#item的mouseMoveEvent没有用是为啥呢。。。
 from PyQt4.QtGui import *
 from PyQt4.QtCore import *
 import basic
-
+import qrc_resource
 UNIT_WIDTH = 50
 UNIT_HEIGHT = 50
 EDGE_WIDTH = 4
@@ -19,7 +20,7 @@ def GetPos(x, y):
     return QPointF(x * (UNIT_WIDTH + EDGE_WIDTH), y * (UNIT_HEIGHT + EDGE_WIDTH))
 
 
-class AbstractUnit(QGraphicsItem):
+class AbstractUnit(QGraphicsObject):
     """界面上元素的基类"""
     def __init__(self, x, y, parent):
         super(AbstractUnit, self).__init__(parent)
@@ -30,6 +31,8 @@ class AbstractUnit(QGraphicsItem):
         return QRectF(0, 0, UNIT_WIDTH+EDGE_WIDTH,
                        UNIT_HEIGHT+EDGE_WIDTH)
 
+    def getParent(self):
+        return self.scene().views()[0]
 class MapUnit(AbstractUnit):
     """地形元素类"""
     def __init__(self, x, y, map_, parent = None):
@@ -54,28 +57,29 @@ class MapUnit(AbstractUnit):
         if event.button() != Qt.RightButton:
             event.ignore()
         else:
-            self.startPos = event.pos()
+#            self.startPos = event.pos()
             event.accept()
 
-    def mouseMoveEvent(self, event):
-        if event.button() != Qt.RightButton:
-            event.ignore()
-            return
-        elif event.pos() - self.startPos.manhattanLength() < QApplication.startDragDistance():
-            event.ignore()
-            return
-        data = QByteArray()
-        stream = QDataStream(data, QIODevice.WriteOnly)
-        stream << self.obj
-        mimeData = QMimeData()
-        mimeData.setData("application/map", data)
-        drag = QDrag(self)
-        drag.setMimeData(data)
-        drag.setPixmap(QPixmap(":%s.png" %FILE_MAP(self.obj.kind)).scaled(30,30))
-        drag.setHotSpot(QPoint(15,15))
-        if drag.start(Qt.MoveAction) == Qt.MoveAction:
-            self.obj = Map_Basic(0)
-            self.update()
+#   def mouseMoveEvent(self, event):
+#        if event.button() != Qt.RightButton:
+#            event.ignore()
+#            return
+#        elif event.pos() - self.startPos.manhattanLength() < QApplication.startDragDistance():
+#            event.ignore()
+#            return
+            data = QByteArray()
+            stream = QDataStream(data, QIODevice.WriteOnly)
+            stream << QVariant(self.obj.kind)
+            mimeData = QMimeData()
+            mimeData.setData("application/map", data)
+            drag = QDrag(self.getParent())
+            drag.setMimeData(mimeData)
+            print self.obj.kind
+            drag.setPixmap(QPixmap(":%s.png" %FILE_MAP[self.obj.kind]).scaled(30,30))
+            drag.setHotSpot(QPoint(15,15))
+            if drag.start(Qt.MoveAction) == Qt.MoveAction:
+                self.obj = basic.Map_Basic(0)
+                self.update()
 
 class SoldierUnit(AbstractUnit):
     """单位基类"""
@@ -84,7 +88,7 @@ class SoldierUnit(AbstractUnit):
 
         self.obj = unit
 
-
+        self.setZValue(0.5)
     def paint(self, painter, option, widget = None):
 #        painter = QPainter()
 
@@ -98,29 +102,33 @@ class SoldierUnit(AbstractUnit):
         if event.button() != Qt.LeftButton:
             event.ignore()
             return
-        self.startPos = event.pos()
+        print self.obj.kind, "press"
+#        self.startPos = event.pos()
         event.accept()
 
-    def mouseMoveEvent(self, event):
-        if event.button() != Qt.LeftButton:
-            event.ignore()
-            return
-        elif event.pos() - self.startPos.manhattanLength() < QApplication.startDragDistance():
-            event.ignore()
-            return
+#    def mouseMoveEvent(self, event):
+#        print "abc"
+#        if event.button() != Qt.LeftButton:
+#            event.ignore()
+#            return
+#        elif event.pos() - self.startPos.manhattanLength() < QApplication.startDragDistance():
+#            event.ignore()
+#            return
         data = QByteArray()
         stream = QDataStream(data, QIODevice.WriteOnly)
-        stream << self.obj
+#        stream << self.obj
+        stream << QVariant(self.obj.kind)
         mimeData = QMimeData()
         mimeData.setData("application/unit", data)
-        drag = QDrag(self)
-        drag.setMimeData(data)
-        drag.setPixmap(QPixmap(":%s.png" %FILE_UNIT(self.obj.kind)).scaled(30,30))
+        drag = QDrag(self.getParent())
+        drag.setMimeData(mimeData)
+        drag.setPixmap(QPixmap(":%s.png" %FILE_UNIT[self.obj.kind]).scaled(30,30))
         drag.setHotSpot(QPoint(15,15))
+        print drag
         if drag.start(Qt.MoveAction) == Qt.MoveAction:
             self.scene().removeItem(self)
 
-class FocusUnit(AbstractUnit,QObject):
+class FocusUnit(AbstractUnit):
     """光标"""
     def __init__(self, x, y ,parent = None):
         super(FocusUnit, self).__init__(x, y, parent)
@@ -210,44 +218,67 @@ class MapView(QGraphicsView):
 
     def dragMoveEvent(self, event):
         if event.mimeData().hasFormat("application/unit") or \
-                event.mimeData.hasFormat("application/map"):
+                event.mimeData().hasFormat("application/map"):
             event.accept()
         else:
             event.ignore()
 
     def dropEvent(self, event):
+        for map1 in self.map_list:
+            print map1[2].obj.kind
         if event.mimeData().hasFormat("application/unit") or \
-                event.mimeData.hasFormat("application/map"):
-            dropPoint = self.mapToScene(event.pos())
+                event.mimeData().hasFormat("application/map"):
+            print "ready drop"
+#            dropPoint = self.mapToScene(event.pos())
+            dropPoint = event.pos()
+            print dropPoint
             targetItem = None
-            for i in range(len(self.map_list)):
-                    if self.map_list[i][2].contains(dropPoint):
-                        targetItem = self.map_list[i]
-                        break
-            if not targetItem:
+#            for i in range(len(self.map_list)):
+#                print "judge"
+#                if self.map_list[i][2].contains(dropPoint):
+#                    print "true"
+#                    targetItem = self.map_list[i]
+#                    break
+            #获取地图元素targetItem
+            targetItem = self.items(dropPoint)[len(self.items(dropPoint)) - 1]
+            if not targetItem or not isinstance(targetItem, MapUnit):
 #                event.setDropAction(Qt.CopyAction)
                 event.accept()
                 return
             if event.mimeData().hasFormat("application/unit"):
                 data = event.mimeData().data("application/unit")
-                unit = Base_Unit(0)
+#                unit = Base_Unit(0)
+                unit = QVariant()
                 stream = QDataStream(data, QIODevice.ReadOnly)
                 stream >> unit
-                new_unit = SoldierUnit(unit)
-                new_unit.position = (targetItem[0], targetItem[1])
-                for i in range(len(self.unit_list)):
-                    if self.unit_list[i][2].contains(dropPoint):
-                        self.unit_list[i][2].scene().removeItem(self.unit_list[i][2])
+                new_unit = SoldierUnit(basic.Base_Unit(unit.toInt()[0],(targetItem.corX, targetItem.corY)))
+
+                items = self.items(dropPoint)
+                #删除该点原有单位
+                for item in items:
+                    if isinstance(item, SoldierUnit):
+                        for i in range(len(self.unit_list)):
+                            if item is self.unit_list[i][2]:
+                                self.unit_list[i][2].scene().removeItem(self.unit_list[i][2])
+                                self.unit_list.pop(i)
+                                break
+                    break
                 self.scene.addItem(new_unit)
+                #记得要setPos
+                new_unit.setPos(GetPos(new_unit.corX, new_unit.corY))
+                print new_unit.corX,new_unit.corY
+                self.unit_list.append((new_unit.corX, new_unit.corY, new_unit))
                 event.setDropAction(Qt.MoveAction)
                 event.accept()
             elif event.mimeData().hasFormat("application/map"):
                 data = event.mimeData().data("application/map")
-                map_ = Map_Basic(0)
+#                map_ = Map_Basic(0)
+                map_ = QVariant()
                 stream = QDataStream(data, QIODevice.ReadOnly)
                 stream >> map_
-                targetItem[2].obj = map_
-                targetItem[2].update()
+                targetItem.obj = basic.Map_Basic(map_.toInt()[0])
+                targetItem.update()
+                self.updateMapItem(targetItem)
                 event.setDropAction(Qt.MoveAction)
                 event.accept()
         else:
@@ -261,7 +292,11 @@ class MapView(QGraphicsView):
             else:
                 self.focusMapUnit = self.items(event.pos())[len(self.items(event.pos()))-1]
                 self.focusGrid.setPos(self.focusMapUnit.pos())
-
+#改变地图元素时同步map_list记录,unit_list同步已嵌入dropEvent
+    def updateMapItem(self, targetItem):
+        for i in range(len(self.map_list)):
+            if self.map_list[i][0] == targetItem.corX and self.map_list[i][1] == targetItem.corY:
+                self.map_list[i] = (targetItem.corX, targetItem.corY, targetItem)
 
 #for test
 if __name__ == "__main__":
@@ -277,6 +312,8 @@ if __name__ == "__main__":
     view = MapView()
     view.setMap(map_)
     view.setUnits(units)
+#    app.setStartDragDistance(1)
+    view.show()
     app.exec_()
 
 
