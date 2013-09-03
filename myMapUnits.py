@@ -3,6 +3,8 @@
 #地图编辑器回放界面,单位定义
 #不用item.contains(QPointF)改用view.items(QPoint)来判断
 #item的mouseMoveEvent没有用是为啥呢。。。
+#解决了unititem放回原处删除的bug
+#解决了mouse grabber没有切换回来的bug
 from PyQt4.QtGui import *
 from PyQt4.QtCore import *
 import basic
@@ -78,9 +80,13 @@ class MapUnit(AbstractUnit):
             drag.setPixmap(QPixmap(":%s.png" %FILE_MAP[self.obj.kind]).scaled(30,30))
             drag.setHotSpot(QPoint(15,15))
             if drag.start(Qt.MoveAction) == Qt.MoveAction:
+                #让item失去mouse grabber
+                self.setVisible(False)
                 self.obj = basic.Map_Basic(0)
+                self.setVisible(True)
                 self.update()
-
+#            drag.start(Qt.MoveAction)
+#    def mouseRelease
 class SoldierUnit(AbstractUnit):
     """单位基类"""
     def __init__(self, unit, parent = None):
@@ -126,7 +132,10 @@ class SoldierUnit(AbstractUnit):
         drag.setHotSpot(QPoint(15,15))
         print drag
         if drag.start(Qt.MoveAction) == Qt.MoveAction:
-            self.scene().removeItem(self)
+            try:
+                self.scene().removeItem(self)
+            except:
+                pass
 
 class FocusUnit(AbstractUnit):
     """光标"""
@@ -152,7 +161,7 @@ class FocusUnit(AbstractUnit):
         pen.setWidth(EDGE_WIDTH)
         pen.setCapStyle(Qt.RoundCap)
         pen.setJoinStyle(Qt.RoundJoin)
-        pen.setColor(Qt.blue)
+        pen.setColor(QColor(Qt.blue).lighter())
         painter.setPen(pen)
 
         painter.drawLine(QPointF(0, 0),
@@ -204,7 +213,7 @@ class MapView(QGraphicsView):
                 self.scene.addItem(new_unit)
                 new_unit.setPos(GetPos(new_unit.corX, new_unit.corY))
 
-                self.unit_list.append((new_unit.corX, new_unit.corY, new_unit))
+                self.unit_list.append((new_unit.corX, new_unit.corY, i, new_unit))
 
 
 
@@ -240,7 +249,10 @@ class MapView(QGraphicsView):
 #                    targetItem = self.map_list[i]
 #                    break
             #获取地图元素targetItem
-            targetItem = self.items(dropPoint)[len(self.items(dropPoint)) - 1]
+            try:
+                targetItem = self.items(dropPoint)[len(self.items(dropPoint)) - 1]
+            except:
+                return
             if not targetItem or not isinstance(targetItem, MapUnit):
 #                event.setDropAction(Qt.CopyAction)
                 event.accept()
@@ -249,17 +261,20 @@ class MapView(QGraphicsView):
                 data = event.mimeData().data("application/unit")
 #                unit = Base_Unit(0)
                 unit = QVariant()
+                side = QVariant()
                 stream = QDataStream(data, QIODevice.ReadOnly)
-                stream >> unit
+                stream >> unit >> side
                 new_unit = SoldierUnit(basic.Base_Unit(unit.toInt()[0],(targetItem.corX, targetItem.corY)))
+                side = side.toInt()[0]
 
                 items = self.items(dropPoint)
+
                 #删除该点原有单位
                 for item in items:
                     if isinstance(item, SoldierUnit):
                         for i in range(len(self.unit_list)):
-                            if item is self.unit_list[i][2]:
-                                self.unit_list[i][2].scene().removeItem(self.unit_list[i][2])
+                            if item is self.unit_list[i][3]:
+                                self.unit_list[i][3].scene().removeItem(self.unit_list[i][3])
                                 self.unit_list.pop(i)
                                 break
                     break
@@ -267,20 +282,22 @@ class MapView(QGraphicsView):
                 #记得要setPos
                 new_unit.setPos(GetPos(new_unit.corX, new_unit.corY))
                 print new_unit.corX,new_unit.corY
-                self.unit_list.append((new_unit.corX, new_unit.corY, new_unit))
-                event.setDropAction(Qt.MoveAction)
-                event.accept()
+                self.unit_list.append((new_unit.corX, new_unit.corY, side, new_unit))
+
             elif event.mimeData().hasFormat("application/map"):
                 data = event.mimeData().data("application/map")
 #                map_ = Map_Basic(0)
                 map_ = QVariant()
+
                 stream = QDataStream(data, QIODevice.ReadOnly)
                 stream >> map_
+                print "maptype",map_.toInt()[0]
                 targetItem.obj = basic.Map_Basic(map_.toInt()[0])
                 targetItem.update()
-                self.updateMapItem(targetItem)
-                event.setDropAction(Qt.MoveAction)
-                event.accept()
+
+            event.setDropAction(Qt.MoveAction)
+            event.accept()
+            self.emit(SIGNAL("dropRec()"))
         else:
             event.ignore()
 
@@ -292,11 +309,21 @@ class MapView(QGraphicsView):
             else:
                 self.focusMapUnit = self.items(event.pos())[len(self.items(event.pos()))-1]
                 self.focusGrid.setPos(self.focusMapUnit.pos())
+
+    def resetAll(self):
+        for item in self.scene.items():
+            if isinstance(item, SoldierUnit):
+                self.scene.removeItem(item)
+            elif isinstance(item, MapUnit):
+                item.obj = basic.Map_Basic(0)
+                item.update()
+        self.unit_list = []
+
 #改变地图元素时同步map_list记录,unit_list同步已嵌入dropEvent
-    def updateMapItem(self, targetItem):
-        for i in range(len(self.map_list)):
-            if self.map_list[i][0] == targetItem.corX and self.map_list[i][1] == targetItem.corY:
-                self.map_list[i] = (targetItem.corX, targetItem.corY, targetItem)
+#    def updateMapItem(self, targetItem):
+#        for i in range(len(self.map_list)):
+#            if self.map_list[i][0] == targetItem.corX and self.map_list[i][1] == targetItem.corY:
+#                self.map_list[i] = (targetItem.corX, targetItem.corY, targetItem)
 
 #for test
 if __name__ == "__main__":
