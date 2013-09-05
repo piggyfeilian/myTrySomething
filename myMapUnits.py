@@ -191,6 +191,8 @@ class MapView(QGraphicsView):
 
         self.map_list = []
         self.unit_list = []
+        self.width = 0
+        self.height = 0
 
         self.focusGrid = FocusUnit(0, 0)
         self.focusMapUnit = None
@@ -200,12 +202,15 @@ class MapView(QGraphicsView):
 
     def setMap(self, map_):
         self.resetAll()
-        for i in range(len(map_)):
-            for j in range(len(map_[0])):
+        self.width = len(map_[0])
+        self.height = len(map_)
+        for i in range(self.height):
+            for j in range(self.width):
                 new_map = MapUnit(j, i, map_[i][j])
                 self.scene.addItem(new_map)
                 new_map.setPos(GetPos(j, i))
                 self.map_list.append((j, i, new_map))
+
 
     def setUnits(self, units):
         for i in range(2):
@@ -316,16 +321,73 @@ class MapView(QGraphicsView):
             self.scene.removeItem(item)
         self.unit_list = []
         self.map_list = []
+        self.width = 0
+        self.height = 0
 
     def initEmpty(self, x, y):
         if self.map_list or self.unit_list:
             return
+        self.width = x
+        self.height = y
         for i in range(x):
             for j in range(y):
                 map_ = MapUnit(i, j, basic.Map_Basic(0))
                 self.scene.addItem(map_)
                 map_.setPos(GetPos(i,j))
                 self.map_list.append((i, j, map_))
+
+    def changeWidth(self, new_width):
+
+        if new_width < self.width:
+            list_to_rm = []
+            for i in range(len(self.map_list)):
+                if self.map_list[i][0] >= new_width:
+                    self.scene.removeItem(self.map_list[i][2])
+                    list_to_rm.append(self.map_list[i])
+            for item in list_to_rm:
+                self.map_list.remove(item)
+            list_to_rm = []
+            for i in range(len(self.unit_list)):
+                if self.unit_list[i][0] >= new_width:
+                    self.scene.removeItem(self.unit_list[i][3])
+                    list_to_rm.append(self.unit_list[i])
+            for item in list_to_rm:
+                self.unit_list.remove(item)
+        else:
+            for i in range(self.height):
+                for j in range(new_width - self.width):
+                    new_map = MapUnit(j+self.width,i,basic.Map_Basic(0))
+                    self.map_list.append((j + self.width, i, new_map))
+                    self.scene.addItem(new_map)
+                    new_map.setPos(GetPos(j + self.width, i))
+
+        self.width = new_width
+
+    def changeHeight(self, new_height):
+        if new_height < self.height:
+            list_to_rm = []
+            for i in range(len(self.map_list)):
+                if self.map_list[i][1] >= new_height:
+                    self.scene.removeItem(self.map_list[i][2])
+                    list_to_rm.append(self.map_list[i])
+            for item in list_to_rm:
+                self.map_list.remove(item)
+
+            list_to_rm = []
+            for i in range(len(self.unit_list)):
+                if self.unit_list[i][1] >= new_height:
+                    self.scene.removeItem(self.unit_list[i][3])
+                    list_to_rm.append(self.map_list[i])
+            for item in list_to_rm:
+                self.unit_list.remove(item)
+        else:
+            for i in range(self.width):
+                for j in range(new_height - self.height):
+                    new_map = MapUnit(i,j+self.height,basic.Map_Basic(0))
+                    self.map_list.append((i, j + self.height, new_map))
+                    self.scene.addItem(new_map)
+                    new_map.setPos(GetPos(i, j + self.height))
+        self.height = new_height
 
 #改变地图元素时同步map_list记录,unit_list同步已嵌入dropEvent
 #    def updateMapItem(self, targetItem):

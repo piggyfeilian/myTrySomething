@@ -228,7 +228,7 @@
     </font>
    </property>
    <property name="text">
-    <string>30</string>
+    <string>8</string>
    </property>
   </widget>
   <widget class="QLineEdit" name="heightEdit">

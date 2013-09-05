@@ -2,7 +2,7 @@
 
 # Form implementation generated from reading ui file 'mapWindow.ui'
 #
-# Created: Thu Sep  5 19:24:43 2013
+# Created: Thu Sep  5 21:24:14 2013
 #      by: PyQt4 UI code generator 4.9.3
 #
 # WARNING! All changes made in this file will be lost!
@@ -127,7 +127,7 @@ class Ui_MapWindow(object):
         self.side2.setText(QtGui.QApplication.translate("MapWindow", "side2", None, QtGui.QApplication.UnicodeUTF8))
         self.resetButton.setText(QtGui.QApplication.translate("MapWindow", "重置", None, QtGui.QApplication.UnicodeUTF8))
         self.label.setText(QtGui.QApplication.translate("MapWindow", "SIZE:", None, QtGui.QApplication.UnicodeUTF8))
-        self.widthEdit.setText(QtGui.QApplication.translate("MapWindow", "30", None, QtGui.QApplication.UnicodeUTF8))
+        self.widthEdit.setText(QtGui.QApplication.translate("MapWindow", "8", None, QtGui.QApplication.UnicodeUTF8))
         self.heightEdit.setText(QtGui.QApplication.translate("MapWindow", "8", None, QtGui.QApplication.UnicodeUTF8))
         self.label_2.setText(QtGui.QApplication.translate("MapWindow", "×", None, QtGui.QApplication.UnicodeUTF8))
 
