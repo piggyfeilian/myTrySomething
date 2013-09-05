@@ -199,6 +199,7 @@ class MapView(QGraphicsView):
         self.focusGrid.hide()
 
     def setMap(self, map_):
+        self.resetAll()
         for i in range(len(map_)):
             for j in range(len(map_[0])):
                 new_map = MapUnit(j, i, map_[i][j])
@@ -208,7 +209,7 @@ class MapView(QGraphicsView):
 
     def setUnits(self, units):
         for i in range(2):
-            for j in range(len(units[0])):
+            for j in range(len(units[i])):
                 new_unit = SoldierUnit(units[i][j])
                 self.scene.addItem(new_unit)
                 new_unit.setPos(GetPos(new_unit.corX, new_unit.corY))
@@ -312,12 +313,19 @@ class MapView(QGraphicsView):
 
     def resetAll(self):
         for item in self.scene.items():
-            if isinstance(item, SoldierUnit):
-                self.scene.removeItem(item)
-            elif isinstance(item, MapUnit):
-                item.obj = basic.Map_Basic(0)
-                item.update()
+            self.scene.removeItem(item)
         self.unit_list = []
+        self.map_list = []
+
+    def initEmpty(self, x, y):
+        if self.map_list or self.unit_list:
+            return
+        for i in range(x):
+            for j in range(y):
+                map_ = MapUnit(i, j, basic.Map_Basic(0))
+                self.scene.addItem(map_)
+                map_.setPos(GetPos(i,j))
+                self.map_list.append((i, j, map_))
 
 #改变地图元素时同步map_list记录,unit_list同步已嵌入dropEvent
 #    def updateMapItem(self, targetItem):

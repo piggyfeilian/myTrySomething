@@ -2,7 +2,7 @@
 
 # Form implementation generated from reading ui file 'mapWindow.ui'
 #
-# Created: Tue Sep  3 10:05:43 2013
+# Created: Thu Sep  5 19:24:43 2013
 #      by: PyQt4 UI code generator 4.9.3
 #
 # WARNING! All changes made in this file will be lost!
@@ -18,6 +18,10 @@ class Ui_MapWindow(object):
     def setupUi(self, MapWindow):
         MapWindow.setObjectName(_fromUtf8("MapWindow"))
         MapWindow.resize(800, 600)
+        font = QtGui.QFont()
+        font.setBold(True)
+        font.setWeight(75)
+        MapWindow.setFont(font)
         self.symCombo = QtGui.QComboBox(MapWindow)
         self.symCombo.setGeometry(QtCore.QRect(630, 530, 131, 30))
         self.symCombo.setObjectName(_fromUtf8("symCombo"))
@@ -62,12 +66,6 @@ class Ui_MapWindow(object):
         self.saveAsButton = QtGui.QPushButton(self.layoutWidget)
         self.saveAsButton.setObjectName(_fromUtf8("saveAsButton"))
         self.horizontalLayout.addWidget(self.saveAsButton)
-        self.horizontalLayoutWidget = QtGui.QWidget(MapWindow)
-        self.horizontalLayoutWidget.setGeometry(QtCore.QRect(599, 19, 191, 471))
-        self.horizontalLayoutWidget.setObjectName(_fromUtf8("horizontalLayoutWidget"))
-        self.listLayout = QtGui.QHBoxLayout(self.horizontalLayoutWidget)
-        self.listLayout.setMargin(0)
-        self.listLayout.setObjectName(_fromUtf8("listLayout"))
         self.side1 = QtGui.QRadioButton(MapWindow)
         self.side1.setGeometry(QtCore.QRect(590, 500, 90, 20))
         self.side1.setObjectName(_fromUtf8("side1"))
@@ -77,6 +75,39 @@ class Ui_MapWindow(object):
         self.resetButton = QtGui.QPushButton(MapWindow)
         self.resetButton.setGeometry(QtCore.QRect(500, 540, 101, 27))
         self.resetButton.setObjectName(_fromUtf8("resetButton"))
+        self.verticalLayoutWidget_2 = QtGui.QWidget(MapWindow)
+        self.verticalLayoutWidget_2.setGeometry(QtCore.QRect(600, 110, 181, 381))
+        self.verticalLayoutWidget_2.setObjectName(_fromUtf8("verticalLayoutWidget_2"))
+        self.listLayout = QtGui.QVBoxLayout(self.verticalLayoutWidget_2)
+        self.listLayout.setMargin(0)
+        self.listLayout.setObjectName(_fromUtf8("listLayout"))
+        self.label = QtGui.QLabel(MapWindow)
+        self.label.setGeometry(QtCore.QRect(600, 40, 51, 30))
+        font = QtGui.QFont()
+        font.setPointSize(13)
+        font.setBold(True)
+        font.setWeight(75)
+        self.label.setFont(font)
+        self.label.setAutoFillBackground(True)
+        self.label.setObjectName(_fromUtf8("label"))
+        self.widthEdit = QtGui.QLineEdit(MapWindow)
+        self.widthEdit.setGeometry(QtCore.QRect(650, 40, 30, 30))
+        font = QtGui.QFont()
+        font.setFamily(_fromUtf8("FangSong"))
+        font.setPointSize(15)
+        self.widthEdit.setFont(font)
+        self.widthEdit.setObjectName(_fromUtf8("widthEdit"))
+        self.heightEdit = QtGui.QLineEdit(MapWindow)
+        self.heightEdit.setGeometry(QtCore.QRect(720, 40, 30, 30))
+        font = QtGui.QFont()
+        font.setFamily(_fromUtf8("FangSong"))
+        font.setPointSize(15)
+        self.heightEdit.setFont(font)
+        self.heightEdit.setObjectName(_fromUtf8("heightEdit"))
+        self.label_2 = QtGui.QLabel(MapWindow)
+        self.label_2.setGeometry(QtCore.QRect(690, 40, 21, 21))
+        self.label_2.setAutoFillBackground(True)
+        self.label_2.setObjectName(_fromUtf8("label_2"))
 
         self.retranslateUi(MapWindow)
         QtCore.QMetaObject.connectSlotsByName(MapWindow)
@@ -95,4 +126,8 @@ class Ui_MapWindow(object):
         self.side1.setText(QtGui.QApplication.translate("MapWindow", "side1", None, QtGui.QApplication.UnicodeUTF8))
         self.side2.setText(QtGui.QApplication.translate("MapWindow", "side2", None, QtGui.QApplication.UnicodeUTF8))
         self.resetButton.setText(QtGui.QApplication.translate("MapWindow", "重置", None, QtGui.QApplication.UnicodeUTF8))
+        self.label.setText(QtGui.QApplication.translate("MapWindow", "SIZE:", None, QtGui.QApplication.UnicodeUTF8))
+        self.widthEdit.setText(QtGui.QApplication.translate("MapWindow", "30", None, QtGui.QApplication.UnicodeUTF8))
+        self.heightEdit.setText(QtGui.QApplication.translate("MapWindow", "8", None, QtGui.QApplication.UnicodeUTF8))
+        self.label_2.setText(QtGui.QApplication.translate("MapWindow", "×", None, QtGui.QApplication.UnicodeUTF8))
 
