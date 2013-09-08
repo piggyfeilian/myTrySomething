@@ -17,6 +17,8 @@
   <file alias="trap.png">image/trap.png</file>
   <file alias="temple.png">image/temple.png</file>
   <file alias="gear.png">image/gear.png</file>
-
+  <file alias="attack_cursor.png">image/attack_cursor.png</file>
+  <file alias="skill_cursor.png">image/skill_cursor.png</file>
+  <file alias="normal_cursor.png">image/normal_cursor.png</file>
 </qresource>
 </RCC>

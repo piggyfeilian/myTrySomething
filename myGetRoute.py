@@ -47,6 +47,18 @@ def GetRoute(map_list, units_list, idNum, end_pos):
     route, flag = __getRoute(avail_list, beg_pos, end_pos, step)
     return route
 
+def getMoveArrange(map_list, units_list, idNum):
+    arrange_list = []
+    border = [units_list[i][j].position \
+                  for i in range(2) for j in range(len(units_list[0]))]
+    avail_list = [(i, j) for i in range(len(map_list)) \
+                      for j in range(len(map_list[0])) \
+                      if (i, j) not in border]
+    for pos in avail_list:
+        if GetRoute(map_list, units_list, idNum, pos) != []:
+            arrange_list.append(pos)
+    avail_list.append(units_list[idNum[0]][idNum[1]].position)
+    return avail_list
 #for test
 if __name__ == "__main__":
     import Ui_2DReplay.testdata
