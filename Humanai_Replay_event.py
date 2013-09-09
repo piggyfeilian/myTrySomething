@@ -44,6 +44,8 @@ class HumanReplay(QGraphicsView):
 
         self.scene = scene
         self.setScene(self.scene)
+        self.run = False
+        self.setMouseTracking(True)
         #游戏记录变量
         self.iniMapInfo = None
         self.latestStatus = 1
@@ -72,11 +74,15 @@ class HumanReplay(QGraphicsView):
         self.gameEndInfo = []
         #鼠标选定单位
         self.focusUnit = MouseFocusUnit(0, 0)
+        self.scene.addItem(self.focusUnit)
+
         self.focusUnit.setVisible(False)
 
         self.mouseUnit = MouseIndUnit(0, 0)
-#        self.mouseUnit.setVisible(False)
-
+        self.mouseUnit.setVis(False)
+        self.mouseUnit.setVisible(False)
+        self.scene.addItem(self.mouseUnit)
+        self.mouseUnit.setPos(0,0)
         self.setCursor(QCursor(QPixmap(":normal_cursor.png"),0,0))
         #状态机定义与连接
         self.stateMachine = QStateMachine(self)
@@ -112,21 +118,32 @@ class HumanReplay(QGraphicsView):
         self.nowMoveUnit = self.UnitBase[self.gameBegInfo[-1].id[0]][self.gameBegInfo[-1].id[1]]
     #event handlers
     def mouseMoveEvent(self, event):
+        if not self.run:
+            QGraphicsView.mouseMoveEvent(self, event)
+            return
         pos = event.pos()
-#        if not self.mouseUnit.isVisible():
-#            self.mouseUnit.setVisible(True)
+        if not self.mouseUnit.isVisible():
+            self.mouseUnit.setVisible(True)
         item = self.itemAt(pos)
+        if not item:
+            return
         if self.mouseUnit.corX == item.corX and self.mouseUnit.corY == item.corY:
             return
         self.mouseUnit.setPos(item.corX, item.corY)
 
     def mousePressEvent(self, event):
+        if not self.run:
+            QGraphicsView.mousePressEvent(self, event)
+            return
+
         pos = event.pos()
         if not self.focusUnit.isVisible():
             self.focusUnit.setVisible(True)
         item = self.itemAt(pos)
         #还没有做发出展示信号的部分
         if item == self.focusUnit:
+            return
+        if not item:
             return
         if not self.now_state == self.State_Move:
             self.focusUnit.setPos(item.corX, item.corY)
@@ -175,6 +192,7 @@ class HumanReplay(QGraphicsView):
             return
         self.now_state = now_state
         self.resetToPlay()
+
         if now_state == self.State_No_Comm:
             self.Operation = self.moveToPoint = self.command = None
         elif now_state == self.State_Move:
@@ -252,6 +270,8 @@ class HumanReplay(QGraphicsView):
         self.setSoldier(begInfo.base)
         self.latestStatus = 0
         self.gameBegInfo.append(frInfo)
+        self.run = True
+        self.mouseUnit.setVis(True)
 #        self.stateMachine.start()
 
     def UpdateBeginInfo(self, rbInfo):
@@ -330,7 +350,8 @@ class HumanReplay(QGraphicsView):
         self.now_state = self.nowMoveUnit = self.command = self.moveToPos = self.Operation = self.iniMapInfo = None
         self.latestStatus = 1
         self.latestRound = 0
-
+        self.run = False
+        self.mouseUnit.setVis(False)
 #test
 if __name__ == "__main__":
     app = QApplication(sys.argv)

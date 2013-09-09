@@ -80,11 +80,15 @@ class MouseIndUnit(AbstractUnit):
     """光标"""
     def __init__(self, x, y ,parent = None):
         super(MouseIndUnit, self).__init__(x, y, parent)
-
         self.timer = QTimer()
         self.connect(self.timer, SIGNAL("timeout()"), self.timeOut)
-        self.timer.start(600)
+
         self.setZValue(0.6)
+    def setVis(self, vis):
+        if vis:
+            self.timer.start(600)
+        else:
+            self.timer.stop()
 
     def timeOut(self):
         self.setVisible(not self.isVisible())
@@ -94,6 +98,7 @@ class MouseIndUnit(AbstractUnit):
 #    def showEvent(self):
 #        self.setVisible(True)
 #        self.timer.start()
+
     def paint(self, painter, option, widget = None):
         RLINE = 0.4 #rate of line
         pen = QPen()
@@ -102,7 +107,7 @@ class MouseIndUnit(AbstractUnit):
         pen.setJoinStyle(Qt.RoundJoin)
         pen.setColor(QColor(Qt.blue).lighter())
         painter.setPen(pen)
-        painter.setCompositionMode(QPainter.CompositionMode_Multiply)
+#        painter.setCompositionMode(QPainter.CompositionMode_Multiply)
         painter.drawLine(QPointF(0, 0),
                          QPointF(0, RLINE*(UNIT_HEIGHT + EDGE_WIDTH)))
         painter.drawLine(QPointF(0, 0),
@@ -149,9 +154,9 @@ class ArrangeIndUnit(AbstractUnit):
 #        pen.setColor(QColor(Qt.blue).darker())
 #        painter.setPen(pen)
         brush = QBrush()
-        brush.setColor(QColor(255, 0, 0, 255))
+        brush.setColor(QColor(0, 0, 250, 100))
         painter.setBrush(brush)
-        painter.setCompositionMode(QPainter.CompositionMode_Multiply)#QPainter.CompositionMode_Destination)#
+#        painter.setCompositionMode(QPainter.CompositionMode_Multiply)#QPainter.CompositionMode_Destination)#
         painter.drawRect(QRect(EDGE_WIDTH/2, EDGE_WIDTH/2, UNIT_WIDTH + EDGE_WIDTH/2, UNIT_HEIGHT + EDGE_WIDTH/2))
         
 class RouteIndUnit(AbstractUnit):

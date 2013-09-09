@@ -95,6 +95,7 @@ class Ui_Player(QThread):
             self.stopped = False
             self.func = func
             self.cmdNum = 0
+            self.flag = True
 #            self.parent = parent
             self.result = ("Player", (6,6))
 
@@ -135,7 +136,9 @@ class Ui_Player(QThread):
 #            self.lock.lockForRead()
             else:
                 self.emit(SIGNAL("firstCmd()"))
-                WaitForIni.wait(self.lock)
+                print "lala"
+                if self.flag:
+                    WaitForIni.wait(self.lock)
             self.func()
             print "func called"
             WaitForCommand.wait(self.lock)
@@ -401,11 +404,13 @@ class HumanvsAi(QWidget, ui_humanvsai.Ui_HumanvsAi):
         self.setRoundBegInfo(frInfo)
         self.gameBegInfo.append(frInfo)
         #展示
+        time.sleep(1)
         global WaitForIni
         self.replayWindow.GoToRound(len(self.gameBegInfo)-1, 0)
         WaitForIni.wakeAll()
         self.roundLabel.setText("Round %d" %(len(self.gameBegInfo)-1))
         self.labelAnimation()
+        self.playThread.flag = False
 
     def on_rbRecv(self, rbInfo):
         self.replayWindow.UpdateBeginData(rbInfo)
