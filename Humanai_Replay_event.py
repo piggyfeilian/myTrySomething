@@ -39,6 +39,7 @@ class HumanReplay(QGraphicsView):
     oprFinished = pyqtSignal()
     endGame = pyqtSignal()
     commandFinished = pyqtSignal()
+    moveAnimEnd = pyqtSignal()
     def __init__(self, scene, parent = None):
         super(HumanReplay, self).__init__(parent)
 
@@ -63,6 +64,8 @@ class HumanReplay(QGraphicsView):
         self.tmp_route_list = []
         self.tmp_move_list = []
         self.tmp_attack_list = []
+
+        self.animationItem = []
         #储存展示信息
         self.UnitBase = [[],[]]
         self.MapList=[]
@@ -161,7 +164,7 @@ class HumanReplay(QGraphicsView):
                 return
             for item in self.items(pos):
                 if isinstance(item, SoldierUnit):
-                    self.command = basic.Command(self.Opr, self.moveToPos, item.obj.id)
+                    self.command = basic.Command(self.Operation, self.moveToPos, item.idNum)
                     self.emit(SIGNAL("commandFinished"), self.command)
                     self.commandFinished.emit()
                     self.command_list.append(self.command)
@@ -173,12 +176,16 @@ class HumanReplay(QGraphicsView):
                 self.lastAgain.emit()
         if self.now_state != self.State_Opr:
             return
+        #攻击
         if event.key() == Qt.Key_A:
             self.Operation = 1
             self.oprFinished.emit()
+        #skill
         elif event.key() == Qt.Key_S:
+            #判断该单位是否可以使用skill
             self.Operation = 2
             self.oprFinished.emit()
+        #待机
         elif event.key() == Qt.Key_D:
             self.command = basic.Command(0, self.moveToPos, None)
             self.command_list.append(self.command)
@@ -209,7 +216,7 @@ class HumanReplay(QGraphicsView):
         elif now_state == self.State_Target:
             if self.Operation == 1:
                 self.setCursor(QCursor(QPixmap(":attack_cursor.png"),0,0))
-                self.attack_range_list = getAttackRange(self.getMap(self.latestRound, 0), self.gameBegInfo[-1].base, self.gameBegInfo[-1].id, self.moveToPos)
+                self.attack_range_list = getAttackRange(self.gameBegInfo[-1].base, self.gameBegInfo[-1].id, self.moveToPos)
                 self.drawArrange(self.attack_range_list,self.tmp_attack_list)
             elif self.Operation == 2:
                 self.setCursor(QCursor(QPixmap(":skill_cursor.png"),0,0))
@@ -227,12 +234,15 @@ class HumanReplay(QGraphicsView):
             ind_unit.setPos(pos[0],pos[1])
             list_.append(ind_unit)
             print pos
-    def drawRoute(self, route_list, list_):
+    def drawRoute(self, route_list, list_, vis = True):
         for pos in route_list:
             ind_unit = RouteIndUnit(pos[0], pos[1])
             self.scene.addItem(ind_unit)
             ind_unit.setPos(pos[0],pos[1])
+            if not vis:
+                ind_unit.setVisible(False)
             list_.append(ind_unit)
+            
     #得到指定回合的地图,通过每回合mapchange计算
     def getMap(self, round_, status):
         map_ = copy.copy(self.iniMapInfo)
@@ -259,7 +269,7 @@ class HumanReplay(QGraphicsView):
         self.resetUnit()
         for i in range(2):
             for j in range(len(units[i])):
-                new_unit = SoldierUnit(units[i][j])
+                new_unit = SoldierUnit(units[i][j],(i,j))
                 self.scene.addItem(new_unit)
                 new_unit.setPos(new_unit.corX, new_unit.corY)
                 self.UnitBase[i].append(new_unit)
@@ -274,12 +284,12 @@ class HumanReplay(QGraphicsView):
         self.mouseUnit.setVis(True)
 #        self.stateMachine.start()
 
-    def UpdateBeginInfo(self, rbInfo):
+    def UpdateBeginData(self, rbInfo):
         self.gameBegInfo.append(rbInfo)
         self.latestStatus = 0
         self.latestRound += 1
 
-    def UpdateEndInfo(self, comInfo, reInfo):
+    def UpdateEndData(self, comInfo, reInfo):
         self.gameEndInfo.append((comInfo, reInfo))
         self.latestStatus = 1
         self.mapChangeInfo.append(reInfo.change)
@@ -289,8 +299,63 @@ class HumanReplay(QGraphicsView):
 #            map_item.update()
 #            map_list
     #从当前回合开始播放至这一回合结束
-    def Play(self):
+    def TerminateAni(self):
+        if self.animation:
+            self.animation.stop()
+            self.animation.deleteLater()
+            self.animation = None
+        for item in self.animationItem:
+            self.scene.removeItem(item)
+        self.animationItem = []
+
+    def moveAnimation(move_unit, move_pos):
+        TIME_PER_GRID = 800
+        
+        route = GetRoute(self.nowMap,self.gameBegInfo[self.nowRound].base,self.move_unit.idNum,move_pos)
+        
+        steps = len(route)
+#        items = []
+
+        movAnim = QPropertyAnimation(move_unit, "pos")
+        movAnim.setDuration(steps * TIME_PER_GRID)
+        movAnim.setStartValue(GetPos(move_unit.obj.pos[0], move_unit.obj.pos[1]))
+        for i in range(steps):
+            pos = GetPos(route[i][0], route[i][1])
+            movAnim.setKeyValueAt(float(i + 1)/steps, pos)
+
+        return movAnim, []
+    #根据兵种不同attack方式不一样,先完成弓兵的
+    def attackAnimation(move_unit, cmd.target):
         pass
+    def Play(self):
+        #回合末没有动画,先调转再调用
+        if self.nowStatus:
+            return
+        #还没有更新完
+        if len(self.gameEndInfo) < self.nowRound + 1:
+            return
+        unit_id = self.gameBegInfo(self.nowRound).id
+        unit_move = self.UnitBase[unit_id[0]][unit_id[1]]
+        cmd = self.gameEndInfo(self.nowRound)[0]
+        self.animation = QSequentialAnimationGroup()
+
+        #移动动画
+        ani, item = self.moveAnimation(unit_move, cmd.move)
+        self.animation.addAnimation(ani)
+        self.animationItem.extend(item)
+        #attack
+        if cmd.order == 1:
+            ani, item = self.attackAnimation(unit_move, cmd.target)
+            self.animationItem.extend(item)
+            self.animation.addAnimation(ani)
+        #skill
+        elif cmd.order == 2:
+            pass
+        self.animation.addAnimation(QPauseAnimation(1000))
+        self.drawRoute(route, self.animationItem)
+        self.connect(self.animation, SIGNAL("finished()"), self.moveAnimEnd)
+        self.animation.start()
+        #skill
     #展示round_, status的场面
     def GoToRound(self, round_, status):
 #        if self.animation:
@@ -298,7 +363,11 @@ class HumanReplay(QGraphicsView):
         if round_ * 2 + status > self.latestRound * 2 + self.latestStatus:
             raise REPLAYERROR("not update to that status")
 
+        self.nowRound = round_
+        self.nowStatus = status
+
         self.setMap(self.getMap(round_, status))
+
         if status:
             self.setSoldier(self.gameEndInfo[round_][1].base)
         else:

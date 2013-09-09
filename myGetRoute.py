@@ -55,10 +55,33 @@ def getMoveArrange(map_list, units_list, idNum):
                       for j in range(len(map_list[0])) \
                       if (i, j) not in border]
     for pos in avail_list:
-        if GetRoute(map_list, units_list, idNum, pos) != []:
+        if GetRoute(map_list, units_list, idNum, pos):
             arrange_list.append(pos)
     avail_list.append(units_list[idNum[0]][idNum[1]].position)
-    return avail_list
+    return arrange_list
+
+def attackDis(pos1, pos2):
+    dist = 0
+    for i in (0, 1):
+        if (pos1[i]>pos2[i]):
+            dist += pos1[i]-pos2[i]
+        else:
+            dist += pos2[i]-pos1[i]
+    return dist
+
+def getAttackRange(units_list, idNum, now_pos):
+    arrange_list = []
+    row = 1 if not idNum[0] else 0
+    for unit in units_list[row]:
+        print attackDis(unit.position, now_pos)
+        if attackDis(unit.position, now_pos) in units_list[idNum[0]][idNum[1]].attack_range\
+                and not units_list[idNum[0]][idNum[1]].position == unit.position:
+            arrange_list.append(unit.position)
+    return arrange_list
+
+#valid skill target
+def getSkillRange(map_list, units_list, idNum, now_pos):
+    pass
 #for test
 if __name__ == "__main__":
     import Ui_2DReplay.testdata

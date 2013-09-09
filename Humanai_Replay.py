@@ -206,7 +206,7 @@ class HumanReplay(QGraphicsView):
         elif now_state == self.State_Target:
             if self.Operation == 1:
                 self.setCursor(QCursor(QPixmap(":attack_cursor.png"),0,0))
-                self.attack_range_list = getAttackRange(self.getMap(self.latestRound, 0), self.gameBegInfo[-1].base, self.gameBegInfo[-1].id, self.moveToPos)
+                self.attack_range_list = getAttackRange(self.gameBegInfo[-1].base, self.gameBegInfo[-1].id, self.moveToPos)
                 self.drawArrange(self.attack_range_list)
             elif self.Operation == 2:
                 self.setCursor(QCursor(QPixmap(":skill_cursor.png"),0,0))

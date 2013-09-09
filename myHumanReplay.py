@@ -59,9 +59,9 @@ class MapUnit(AbstractUnit):
 
 class SoldierUnit(AbstractUnit):
     """单位基类"""
-    def __init__(self, unit, parent = None):
+    def __init__(self, unit,id_, parent = None):
         super(SoldierUnit, self).__init__(unit.position[0], unit.position[1], parent)
-
+        self.idNum = id_
         self.obj = unit
 
         self.setZValue(0.5)
@@ -154,9 +154,9 @@ class ArrangeIndUnit(AbstractUnit):
 #        pen.setColor(QColor(Qt.blue).darker())
 #        painter.setPen(pen)
         brush = QBrush()
-        brush.setColor(QColor(0, 0, 250, 100))
+        brush.setColor(QColor(0, 0, 250, 200))
         painter.setBrush(brush)
-#        painter.setCompositionMode(QPainter.CompositionMode_Multiply)#QPainter.CompositionMode_Destination)#
+        painter.setCompositionMode(QPainter.CompositionMode_Multiply)#QPainter.CompositionMode_Destination)#
         painter.drawRect(QRect(EDGE_WIDTH/2, EDGE_WIDTH/2, UNIT_WIDTH + EDGE_WIDTH/2, UNIT_HEIGHT + EDGE_WIDTH/2))
         
 class RouteIndUnit(AbstractUnit):

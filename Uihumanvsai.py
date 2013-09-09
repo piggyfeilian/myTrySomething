@@ -76,7 +76,7 @@ class AiThread(QThread):
             if self.isStopped():
                 break
             self.emit(SIGNAL("rbRecv"),rbInfo)
-            rCommand,reInfo = sio._recvs(self.conn)
+            (rCommand,reInfo) = sio._recvs(self.conn)
             if self.isStopped():
                 break
             self.emit(SIGNAL("reRecv"),rCommand, reInfo)
@@ -214,7 +214,7 @@ class HumanvsAi(QWidget, ui_humanvsai.Ui_HumanvsAi):
         self.connect(self.replayWindow, SIGNAL("commandFinished"), self.on_recvC)
         self.connect(self.replayWindow, SIGNAL("unitSelected"), self.on_unitS)
         self.connect(self.replayWindow, SIGNAL("mapSelected"), self.on_mapS)
-#        self.replayWindow.moveAnimEnd.connect(self.on_aniFinished)
+        self.replayWindow.moveAnimEnd.connect(self.on_aniFinished)
         self.connect(self, SIGNAL("ableToPlay()"), self.on_ablePlay)
         #other
         pal = self.scoLabel1.palette()
@@ -367,7 +367,7 @@ class HumanvsAi(QWidget, ui_humanvsai.Ui_HumanvsAi):
             self.playThread.lock.lockForWrite()
             self.playThread.command = cmd
         finally:
-            self.palyThread.lock.unlock()
+            self.playThread.lock.unlock()
             WaitForCommand.wakeAll()
 
     def on_getHero(self):
@@ -502,8 +502,8 @@ class HumanvsAi(QWidget, ui_humanvsai.Ui_HumanvsAi):
         #同步分数
         sco1 = reInfo.score[0]
         sco2 = reInfo.score[1]
-        self.scoLabel1.setText(sco1)
-        self.scoLabel2.setText(sco2)
+        self.scoLabel1.setText("%d"%sco1)
+        self.scoLabel2.setText("%d"%sco2)
  
     def labelAnimation(self):
         animation_1 = QParallelAnimationGroup(self)
