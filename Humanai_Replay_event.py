@@ -2,8 +2,8 @@
 # -*- coding: UTF-8 -*-
 #回放GraphicsView定义
 
-
-
+#改掉pos property的setter使得corX一起变
+#动画等特效部分,没完成
 from myHumanReplay import *
 import sys,copy
 from myGetRoute import *
@@ -333,36 +333,84 @@ class HumanReplay(QGraphicsView):
             movAnim.setEndValue(GetPos(move_unit.obj.position[0], move_unit.obj.position[1]))
         return movAnim, []
 
-    def attackAnimation(self, move_unit, attack_target):
-        TOTAL_TIME = 1500
-        
-        attackInd = AttackIndUnit(move_unit.corX,move_unit.corY,":attack_ind1.png")
+    def attackAnimation(self, move_unit,move_pos, attack_target, effect):
+        ATTACK_TIME = 1500
+        TOTAL_TIME = 2000
+
+        if effect == -1:#超出范围或未攻击(已死亡)
+            return QPauseAnimation(500), []
+        print "attack kindlalala", move_unit.obj.kind
+        attackInd = AttackIndUnit(move_pos[0], move_pos[1],":attack_ind%d.png" %move_unit.obj.kind)
+        attackInd.setVisible(False)
         targetInd = TargetIndUnit(self.UnitBase[attack_target[0]][attack_target[1]].corX,self.UnitBase[attack_target[0]][attack_target[1]].corY)
+        sound = QSound(":attack_sound.wav")
+
+        self.scene.addItem(attackInd)
+        self.scene.addItem(targetInd)
+        attackInd.setPos(attackInd.corX, attackInd.corY)
+        targetInd.setPos(targetInd.corX, targetInd.corY)
 
         showAtkAnim = QParallelAnimationGroup()
         ani = QPropertyAnimation(attackInd, "pos")
         ani.setStartValue(GetPos(attackInd.corX,attackInd.corY))
-        ani.setDuration(TOTAL_TIME)
+        ani.setDuration(ATTACK_TIME)
         ani.setEndValue(GetPos(targetInd.corX, targetInd.corY))
+        self.connect(ani, SIGNAL("finished()"), sound, SLOT("play()"))
         showAtkAnim.addAnimation(ani)
+
         ani = QPropertyAnimation(attackInd, "opacity")
         ani.setDuration(TOTAL_TIME)
         ani.setStartValue(1)
-        ani.setKeyValueAt(0.99, 1)
-        ani.setKeyValueAt(1, 1)
+        ani.setKeyValueAt(0.8, 0.3)
+        ani.setKeyValueAt(0.9, 0.8)
         ani.setEndValue(0)
         showAtkAnim.addAnimation(ani)
+
         ani = QPropertyAnimation(targetInd, "opacity")
         ani.setDuration(TOTAL_TIME)
         ani.setStartValue(1)
         ani.setKeyValueAt(0.99, 1)
-        ani.setKeyValueAt(1, 1)
+#        ani.setKeyValueAt(1, 1)
         ani.setEndValue(0)
         showAtkAnim.addAnimation(ani)
-        #攻击效果展示miss之类
-
+        #攻击效果展示
+        if effect:
+            pass
+        else:
+            pass
         item = [attackInd, targetInd]
         return showAtkAnim, item
+
+
+    def dieAnimation(self, die_unit):
+        TOTAL_TIME = 2000
+
+        unit = self.UnitBase[die_unit[0]][die_unit[1]]
+        die_e = QGraphicsBlurEffect(self)
+        die_e.setBlurRadius(0.2)
+        unit.setGraphicsEffect(die_e)
+
+        dieInd = DieIndUnit()
+        self.scene.addItem(dieInd)
+        dieInd.setPos(unit.corX, unit.corY)
+
+        dieAnim = QParallelAnimationGroup()
+        dieAni = QPropertyAnimation(unit, "opacity")
+        dieAni.setDuration(TOTAL_TIME)
+        dieAni.setStartValue(1)
+        dieAni.setStartValue(0)
+        dieAnim.addAnimation(dieAni)
+        dieAni1 = QPropertyAnimation(dieInd, "opacity")
+        dieAni1.setDuration(TOTAL_TIME)
+        dieAni1.setStartValue(1)
+        dieAni1.setKeyValueAt(0.2, 0.3)
+        dieAni1.setKeyValueAt(0.4, 0.8)
+        dieAni1.setKeyValueAt(0.7, 0.2)
+        dieAni1.setKeyValueAt(0.9, 0.6)
+        dieAni1.setKeyValueAt(1, 0)
+        dieAnim.addAnimation(dieAni1)
+
+        return dieAnim, [dieInd]
 
     def Play(self):
         #回合末没有动画,先调转再调用
@@ -375,6 +423,8 @@ class HumanReplay(QGraphicsView):
         unit_id = self.gameBegInfo[self.nowRound].id
         unit_move = self.UnitBase[unit_id[0]][unit_id[1]]
         cmd = self.gameEndInfo[self.nowRound][0]
+        endInfo = self.gameEndInfo[self.nowRound][1]
+
         self.animation = QSequentialAnimationGroup()
 
         #移动动画
@@ -383,17 +433,33 @@ class HumanReplay(QGraphicsView):
         self.animationItem.extend(item)
         #attack
         if cmd.order == 1:
-            ani, item = self.attackAnimation(unit_move, cmd.target)
+            ani, item = self.attackAnimation(unit_move, cmd.move,cmd.target, endInfo.effect[0])
             self.animationItem.extend(item)
             self.animation.addAnimation(ani)
-
+            print "add animation"
+            #target die
+            if endInfo.base[cmd.target[0]][cmd.target[1]].life == 0:
+                anim, item = self.dieAnimation(cmd.target)
+                self.animationItem.extend(item)
+                self.animation.addAnimation(anim)
+#            elif endInfo.effect[1] != -1:
+            #fight back
+            anim, item = self.attackAnimation(self.UnitBase[cmd.target[0]][cmd.target[1]], (self.UnitBase[cmd.target[0]][cmd.target[1]].corX,\
+                                                                                                self.UnitBase[cmd.target[0]][cmd.target[1]].corY),
+                                                  unit_move.idNum, endInfo.effect[1])
+            if endInfo.base[unit_id[0]][unit_id[1]].life == 0:
+                anim, item = self.dieAnimation(unit_id)
+                self.animation.extend(item)
+                self.animation.addAnimation(anim)
         #skill
         elif cmd.order == 2:
             pass
+        #待机只暂停1秒
         self.animation.addAnimation(QPauseAnimation(1000))
 #        self.drawRoute(route, self.animationItem)
         self.connect(self.animation, SIGNAL("finished()"), self.moveAnimEnd)
         self.connect(self.animation, SIGNAL("finished()"), self.animation, SLOT("deleteLater()"))
+
         self.animation.start()
         #skill
     #展示round_, status的场面
