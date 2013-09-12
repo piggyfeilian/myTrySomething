@@ -3,7 +3,7 @@
 #for testing ai_debugger using data in Ui_2DReplay/testdata.py
 
 import socket,sio,time
-from Ui_2DReplay.testdata import *
+from testdata import *
 serv = socket.socket(socket.AF_INET,socket.SOCK_STREAM)
 serv2 = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 #try:
@@ -41,18 +41,24 @@ print "sent first"
 sio._sends(connAI, begInfo0)
 print "sent Ai first"
 cmd0_ = sio._recvs(connAI)
+print "movepos",cmd0_.move
 print "recv command"
-sio._sends(connUI, (cmd0_, endInfo0))
+sio._sends(connUI, (cmd0, endInfo0))
 print "re1 send"
 time.sleep(3)
 #Round 2
-sio._sends(connUI, begInfo0)
-time.sleep(3)
-sio._sends(connUI, (cmd0, endInfo0))
+sio._sends(connUI, begInfo1)
+#time.sleep(3)
+sio._sends(connUI, (cmd2_, endInfo2_))
 print "re2 send"
 #time.sleep(10)
 #Round 3
-sio._sends(connUI, begInfo1)
+sio._sends(connUI, begInfo2)
+sio._sends(connAI, begInfo2)
+print "sent ai second"
+cmd1 = sio._recvs(connAI)
+print cmd1.move
+print "rev command"
 #time.sleep(3)
 endInfo = endInfo1
 endInfo.over = 0

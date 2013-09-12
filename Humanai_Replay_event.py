@@ -46,6 +46,7 @@ class HumanReplay(QGraphicsView):
         self.scene = scene
         self.setScene(self.scene)
         self.run = False
+        self.animation = None
         self.setMouseTracking(True)
         #游戏记录变量
         self.iniMapInfo = None
@@ -119,6 +120,7 @@ class HumanReplay(QGraphicsView):
         self.commBeg.emit()
         print "emit"
         self.nowMoveUnit = self.UnitBase[self.gameBegInfo[-1].id[0]][self.gameBegInfo[-1].id[1]]
+        print self.nowMoveUnit.obj.position
     #event handlers
     def mouseMoveEvent(self, event):
         if not self.run:
@@ -227,6 +229,7 @@ class HumanReplay(QGraphicsView):
 
     def on_Exited(self):
         self.setCursor(QCursor(QPixmap(":normal_cursor.png"),0,0))
+
     def drawArrange(self, arrange_list,list_):
         for pos in arrange_list:
             ind_unit = ArrangeIndUnit(pos[0], pos[1])
@@ -247,11 +250,11 @@ class HumanReplay(QGraphicsView):
     def getMap(self, round_, status):
         map_ = copy.copy(self.iniMapInfo)
         for i in range(round_):
-            if mapChangeInfo[i]:
-                for change in mapChangeInfo[i]:
+            if self.mapChangeInfo[i]:
+                for change in self.mapChangeInfo[i]:
                     map_[change[1][1]][change[1][0]] = basic.Map_Basic(change[0])
         if status:
-            change = mapChangeInfo[round_]
+            change = self.mapChangeInfo[round_]
             map_[change[1][1]][change[1][0]] = basic.Map_Basic(change[0])
         return map_
     def setMap(self, map_):
@@ -273,7 +276,7 @@ class HumanReplay(QGraphicsView):
                 self.scene.addItem(new_unit)
                 new_unit.setPos(new_unit.corX, new_unit.corY)
                 self.UnitBase[i].append(new_unit)
-
+        print "unitbase",len(self.UnitBase)#for test
     def Initialize(self, begInfo,frInfo):
         self.setMap(begInfo.map)
         self.iniMapInfo = begInfo.map
@@ -308,25 +311,59 @@ class HumanReplay(QGraphicsView):
             self.scene.removeItem(item)
         self.animationItem = []
 
-    def moveAnimation(move_unit, move_pos):
+    def moveAnimation(self, move_unit, move_pos):
         TIME_PER_GRID = 800
         
-        route = GetRoute(self.nowMap,self.gameBegInfo[self.nowRound].base,self.move_unit.idNum,move_pos)
+        route = GetRoute(self.getMap(self.nowRound,0),self.gameBegInfo[self.nowRound].base,move_unit.idNum,move_pos)
         
         steps = len(route)
 #        items = []
 
         movAnim = QPropertyAnimation(move_unit, "pos")
         movAnim.setDuration(steps * TIME_PER_GRID)
-        movAnim.setStartValue(GetPos(move_unit.obj.pos[0], move_unit.obj.pos[1]))
+        movAnim.setStartValue(GetPos(move_unit.obj.position[0], move_unit.obj.position[1]))
+        print move_unit.obj.position
         for i in range(steps):
             pos = GetPos(route[i][0], route[i][1])
             movAnim.setKeyValueAt(float(i + 1)/steps, pos)
-
+        print route
+        if route:
+            movAnim.setEndValue(GetPos(route[-1][0],route[-1][1]))
+        else:
+            movAnim.setEndValue(GetPos(move_unit.obj.position[0], move_unit.obj.position[1]))
         return movAnim, []
-    #根据兵种不同attack方式不一样,先完成弓兵的
-    def attackAnimation(move_unit, cmd.target):
-        pass
+
+    def attackAnimation(self, move_unit, attack_target):
+        TOTAL_TIME = 1500
+        
+        attackInd = AttackIndUnit(move_unit.corX,move_unit.corY,":attack_ind1.png")
+        targetInd = TargetIndUnit(self.UnitBase[attack_target[0]][attack_target[1]].corX,self.UnitBase[attack_target[0]][attack_target[1]].corY)
+
+        showAtkAnim = QParallelAnimationGroup()
+        ani = QPropertyAnimation(attackInd, "pos")
+        ani.setStartValue(GetPos(attackInd.corX,attackInd.corY))
+        ani.setDuration(TOTAL_TIME)
+        ani.setEndValue(GetPos(targetInd.corX, targetInd.corY))
+        showAtkAnim.addAnimation(ani)
+        ani = QPropertyAnimation(attackInd, "opacity")
+        ani.setDuration(TOTAL_TIME)
+        ani.setStartValue(1)
+        ani.setKeyValueAt(0.99, 1)
+        ani.setKeyValueAt(1, 1)
+        ani.setEndValue(0)
+        showAtkAnim.addAnimation(ani)
+        ani = QPropertyAnimation(targetInd, "opacity")
+        ani.setDuration(TOTAL_TIME)
+        ani.setStartValue(1)
+        ani.setKeyValueAt(0.99, 1)
+        ani.setKeyValueAt(1, 1)
+        ani.setEndValue(0)
+        showAtkAnim.addAnimation(ani)
+        #攻击效果展示miss之类
+
+        item = [attackInd, targetInd]
+        return showAtkAnim, item
+
     def Play(self):
         #回合末没有动画,先调转再调用
         if self.nowStatus:
@@ -334,9 +371,10 @@ class HumanReplay(QGraphicsView):
         #还没有更新完
         if len(self.gameEndInfo) < self.nowRound + 1:
             return
-        unit_id = self.gameBegInfo(self.nowRound).id
+        self.TerminateAni()
+        unit_id = self.gameBegInfo[self.nowRound].id
         unit_move = self.UnitBase[unit_id[0]][unit_id[1]]
-        cmd = self.gameEndInfo(self.nowRound)[0]
+        cmd = self.gameEndInfo[self.nowRound][0]
         self.animation = QSequentialAnimationGroup()
 
         #移动动画
@@ -348,18 +386,20 @@ class HumanReplay(QGraphicsView):
             ani, item = self.attackAnimation(unit_move, cmd.target)
             self.animationItem.extend(item)
             self.animation.addAnimation(ani)
+
         #skill
         elif cmd.order == 2:
             pass
         self.animation.addAnimation(QPauseAnimation(1000))
-        self.drawRoute(route, self.animationItem)
+#        self.drawRoute(route, self.animationItem)
         self.connect(self.animation, SIGNAL("finished()"), self.moveAnimEnd)
+        self.connect(self.animation, SIGNAL("finished()"), self.animation, SLOT("deleteLater()"))
         self.animation.start()
         #skill
     #展示round_, status的场面
     def GoToRound(self, round_, status):
-#        if self.animation:
-#            self.TerminateAni()
+        if self.animation:
+            self.TerminateAni()
         if round_ * 2 + status > self.latestRound * 2 + self.latestStatus:
             raise REPLAYERROR("not update to that status")
 
@@ -371,6 +411,7 @@ class HumanReplay(QGraphicsView):
         if status:
             self.setSoldier(self.gameEndInfo[round_][1].base)
         else:
+            print "round:",round_,self.gameBegInfo[round_]
             self.setSoldier(self.gameBegInfo[round_].base)
 
     def resetMap(self):

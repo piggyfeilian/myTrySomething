@@ -20,6 +20,7 @@ def GetPos(x, y):
 
 class AbstractUnit(QGraphicsObject):
     """界面上元素的基类"""
+
     def __init__(self, x, y, parent):
         super(AbstractUnit, self).__init__(parent)
 
@@ -45,9 +46,9 @@ class MapUnit(AbstractUnit):
 #QGraphicsItem reimplement paint() rather than paintEvent
     def paint(self, painter, option, widget = None):
 #        painter = QPainter()
-
+        painter.save()
         filename = ":" + FILE_MAP[self.obj.kind] + ".png"
-        image = QImage(filename)
+        image = QImage(filename).convertToFormat(QImage.Format_ARGB32)
         painter.drawImage(QPoint(EDGE_WIDTH/2, EDGE_WIDTH/2), image.scaled(UNIT_WIDTH, UNIT_HEIGHT,
                                                       Qt.IgnoreAspectRatio))
         painter.setBrush(Qt.NoBrush)
@@ -55,7 +56,7 @@ class MapUnit(AbstractUnit):
         pen.setWidth(EDGE_WIDTH)
         painter.setPen(pen)
         painter.drawRect(0, 0, UNIT_WIDTH + EDGE_WIDTH, UNIT_HEIGHT + EDGE_WIDTH)
-
+        painter.restore()
 
 class SoldierUnit(AbstractUnit):
     """单位基类"""
@@ -67,13 +68,13 @@ class SoldierUnit(AbstractUnit):
         self.setZValue(0.5)
     def paint(self, painter, option, widget = None):
 #        painter = QPainter()
-
+        painter.save()
         filename = ":" + FILE_UNIT[self.obj.kind] + ".png"
-        image = QImage(filename)
+        image = QImage(filename).convertToFormat(QImage.Format_ARGB32)
         painter.setCompositionMode(QPainter.CompositionMode_Multiply)
         painter.drawImage(QPoint(EDGE_WIDTH/2, EDGE_WIDTH/2), image.scaled(UNIT_WIDTH, UNIT_HEIGHT,
                                                                            Qt.IgnoreAspectRatio))
-
+        painter.restore()
 
 
 class MouseIndUnit(AbstractUnit):
@@ -100,6 +101,7 @@ class MouseIndUnit(AbstractUnit):
 #        self.timer.start()
 
     def paint(self, painter, option, widget = None):
+        painter.save()
         RLINE = 0.4 #rate of line
         pen = QPen()
         pen.setWidth(EDGE_WIDTH)
@@ -124,12 +126,12 @@ class MouseIndUnit(AbstractUnit):
                          QPointF(UNIT_WIDTH + EDGE_WIDTH, (1-RLINE)*(UNIT_HEIGHT + EDGE_WIDTH)))
         painter.drawLine(QPointF(UNIT_WIDTH + EDGE_WIDTH, (UNIT_HEIGHT + EDGE_WIDTH)),
                          QPointF((1-RLINE)*(UNIT_WIDTH + EDGE_WIDTH), (UNIT_HEIGHT + EDGE_WIDTH)))
-
+        painter.restore()
 
 class MouseFocusUnit(AbstractUnit):
     def __init__(self, x, y, parent = None):
         super(MouseFocusUnit, self).__init__(x, y, parent)
-        self.setZValue(1)
+        self.setZValue(0.9)
 
     def paint(self, painter, option, widget = None):
         pen = QPen()
@@ -140,13 +142,14 @@ class MouseFocusUnit(AbstractUnit):
         painter.setPen(pen)
         painter.setCompositionMode(QPainter.CompositionMode_Multiply)
         painter.drawRect(QRect(0, 0, UNIT_WIDTH + EDGE_WIDTH, UNIT_HEIGHT + EDGE_WIDTH))
-        
+
 class ArrangeIndUnit(AbstractUnit):
     def __init__(self, x, y, parent = None):
         super(ArrangeIndUnit, self).__init__(x, y, parent)
-        self.setZValue(0.9)
+        self.setZValue(1)
 
     def paint(self, painter, option, widget = None):
+        painter.save()
 #        pen = QPen()
 #        pen.setWidth(EDGE_WIDTH)
 #        pen.setCapStyle(Qt.RoundCap)
@@ -154,11 +157,11 @@ class ArrangeIndUnit(AbstractUnit):
 #        pen.setColor(QColor(Qt.blue).darker())
 #        painter.setPen(pen)
         brush = QBrush()
-        brush.setColor(QColor(0, 0, 250, 200))
+        brush.setColor(QColor(0,255 , 255, 255))
         painter.setBrush(brush)
-        painter.setCompositionMode(QPainter.CompositionMode_Multiply)#QPainter.CompositionMode_Destination)#
+        painter.setCompositionMode(QPainter.CompositionMode_Source)#QPainter.CompositionMode_Multiply)#
         painter.drawRect(QRect(EDGE_WIDTH/2, EDGE_WIDTH/2, UNIT_WIDTH + EDGE_WIDTH/2, UNIT_HEIGHT + EDGE_WIDTH/2))
-        
+        painter.restore()
 class RouteIndUnit(AbstractUnit):
 
     def __init__(self, x, y, parent = None):
@@ -166,6 +169,7 @@ class RouteIndUnit(AbstractUnit):
         self.setZValue(0.9)
 
     def paint(self, painter, option, widget = None):
+        painter.save()
 #        pen = QPen()
 #        pen.setWidth(EDGE_WIDTH)
 #        pen.setCapStyle(Qt.RoundCap)
@@ -175,6 +179,29 @@ class RouteIndUnit(AbstractUnit):
         brush = QBrush()
         brush.setColor(QColor(200, 0, 0))
         painter.setBrush(brush)
-        painter.setCompositionMode(QPainter.CompositionMode_Multiply)#QPainter.CompositionMode_Destination)#QPainter.CompositionMode_Multiply)
+ #       painter.setCompositionMode(QPainter.CompositionMode_Multiply)#QPainter.CompositionMode_Destination)#QPainter.CompositionMode_Multiply)
         painter.drawEllipse(QPointF((UNIT_WIDTH + EDGE_WIDTH) / 2, (UNIT_HEIGHT + EDGE_WIDTH) / 2), 5, 5)
+        painter.restore()
 
+class AttackIndUnit(AbstractUnit):
+    def __init__(self, x,y,file_, parent = None):
+        super(AttackIndUnit, self).__init__(x,y,parent)
+        self.image = QImage(file_).scaled(UNIT_WIDTH/2, UNIT_HEIGHT/2)
+#        self.setOpacity(0)
+    def paint(self, painter, option, widget = None):
+        painter.setCompositionMode(QPainter.CompositionMode_Multiply)
+        painter.drawImage(QPointF(UNIT_WIDTH/4, UNIT_HEIGHT/4),self.image)
+
+class TargetIndUnit(AbstractUnit):
+    def __init__(self, x,y,parent = None):
+        super(TargetIndUnit, self).__init__(x,y,parent)
+
+    def paint(self, painter, option, widget = None):
+        pen = QPen()
+        pen.setWidth(EDGE_WIDTH)
+        pen.setCapStyle(Qt.RoundCap)
+        pen.setJoinStyle(Qt.RoundJoin)
+        pen.setColor(QColor(Qt.red))
+        painter.setPen(pen)
+#        painter.setCompositionMode(QPainter.CompositionMode_Multiply)
+        painter.drawRect(QRect(0, 0, UNIT_WIDTH + EDGE_WIDTH, UNIT_HEIGHT + EDGE_WIDTH))
