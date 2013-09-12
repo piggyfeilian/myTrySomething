@@ -374,11 +374,28 @@ class HumanReplay(QGraphicsView):
         ani.setEndValue(0)
         showAtkAnim.addAnimation(ani)
         #攻击效果展示
+
         if effect:
-            pass
+            label = EffectIndUnit("- %d" %(self.gameEndInfo[self.nowRound][1].base[attack_target[0]][attack_target[1]].life -\
+                                            self.gameBegInfo[self.nowRound].base[attack_target[0]][attack_target[1]].life)
+                                  )
         else:
-            pass
-        item = [attackInd, targetInd]
+            label = EffectIndUnit("Miss")
+        label.setVisible(False)
+        self.scene.addItem(label)
+        label.setPos(GetPos(targetInd.corX, targetInd.corY)+QPointF(0,-20))
+        ani = QPropertyAnimation(label, "opacity")
+        ani.setDuration(TOTAL_TIME)
+        ani.setStartValue(1)
+        ani.setEndValue(0)
+
+        showAtkAnim.addAnimation(ani)
+        ani = QPropertyAnimation(label, "pos")
+        ani.setDuration(TOTAL_TIME)
+        ani.setStartValue(label.pos())
+        ani.setEndValue(label.pos() + QPointF(0,-20))
+        ani.setEasingCurve(QEasingCurve.OutCubic)
+        item = [attackInd, targetInd, label]
         return showAtkAnim, item
 
 

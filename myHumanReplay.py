@@ -8,6 +8,7 @@ import qrc_resource
 UNIT_WIDTH = 50
 UNIT_HEIGHT = 50
 EDGE_WIDTH = 4
+EXTRA_WIDTH = 4
 
 FILE_UNIT = ["saber", "lancer", "archer", "dragon_rider", "warrior",
              "wizard", "hero_1", "hero_2", "hero_3"]
@@ -207,7 +208,18 @@ class TargetIndUnit(AbstractUnit):
         painter.setPen(pen)
 #        painter.setCompositionMode(QPainter.CompositionMode_Multiply)
         painter.drawRect(QRect(0, 0, UNIT_WIDTH + EDGE_WIDTH, UNIT_HEIGHT + EDGE_WIDTH))
-        
+
+class EffectIndUnit(QGraphicsObject):
+    def __init__(self, text, parent = None):
+        super(EffectIndUnit, self).__init__(parent)
+        self.text = text
+
+    def boundingRect(self):
+        return QRectF(-EXTRA_WIDTH, 0, UNIT_WIDTH + EDGE_WIDTH + 2 * EXTRA_WIDTH, 30)
+    def paint(self, painter, option, widget = None):
+#        painter.setPen(Qt.NoPen)
+        painter.setPen(QColor(Qt.red).lighter())
+        painter.drawText(self.boundingRect(), text, QTextOption(Qt.AlignHCenter))
 
 class DieIndUnit(AbstractUnit):
     def __init__(self, x = 0, y = 0, parent = None):
