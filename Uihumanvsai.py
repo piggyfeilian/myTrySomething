@@ -7,16 +7,16 @@ from PyQt4.QtCore import *
 import ui_humanvsai
 from Humanai_Replay_event import HumanReplay
 from info_widget import *
-import os,sio,basic,socket,time
+import os,sio,basic,socket,time,select
 from herotypedlg import GetHeroTypeDlg
-
+from functools import partial
 #from AI_debugger import AiThread
 
 try:
     _frUtf = QString.fromUtf8
 except AttributeError:
     _frUtf = lambda s:s
-
+WAIT_TIME = 5000
 AI_DIR = "." #默认ai目录路径
 MAP_DIR = "."
 Already_Wait = False
@@ -77,9 +77,19 @@ class AiThread(QThread):
             if self.isStopped():
                 break
             self.emit(SIGNAL("rbRecv"),rbInfo)
-            rCommand,reInfo = sio._recvs(self.conn)
+            readFlag = 0
+            while not readFlag:
+                ready = select.select([self.conn], [], [], WAIT_TIME)
+                if ready[0]:
+                    rCommand,reInfo = sio._recvs(self.conn)
+                    readFlag = 1
+
+                if self.isStopped():
+                    print "break by stop"
+                    break
             if self.isStopped():
                 break
+
             self.emit(SIGNAL("reRecv"),rCommand, reInfo)
         if not self.isStopped():
             winner = sio._recvs(self.conn)
@@ -170,7 +180,14 @@ class Ui_Player(QThread):
             print "4"
 
             while True and not self.isStopped():
-                rBeginInfo = sio._recvs(self.conn)
+                readFlag2 = 0
+                while not readFlag2:
+                    ready2 = select.select([self.conn], [], [], WAIT_TIME)
+                    if ready2[0]:
+                        rBeginInfo = sio._recvs(self.conn)
+                        readFlag2 = 1
+                    if self.isStopped():
+                        break
                 print 'rbInfo got'
                 if rBeginInfo != '|':
                     sio._sends(self.conn,self.AI(rBeginInfo))
@@ -308,7 +325,7 @@ class HumanvsAi(QWidget, ui_humanvsai.Ui_HumanvsAi):
 #            self.connect(self.aiThread, SIGNAL("finished()"), self.replayWindow.updateUI)
         self.connect(self.aiThread, SIGNAL("finished()"), self.aiThread,
                          SLOT("deleteLater()"))
-
+        self.connect(self.aiThread, SIGNAL("finished()"), partial(self.on_threadF,0))
         self.playThread = Ui_Player(0, self.getComm, self)
 #        try:
         self.playThread.initialize()
@@ -325,6 +342,7 @@ class HumanvsAi(QWidget, ui_humanvsai.Ui_HumanvsAi):
         self.connect(self.playThread, SIGNAL("firstCmd()"), self.on_firstCmd)
         self.connect(self.playThread, SIGNAL("finished()"), self.playThread,
                          SLOT("deleteLater()"))
+        self.connect(self.playThread, SIGNAL("finished()"), partial(self.on_threadF,1))
 
         if flag == 0:
             self.started = True
@@ -363,12 +381,14 @@ class HumanvsAi(QWidget, ui_humanvsai.Ui_HumanvsAi):
             if answer == QMessageBox.No:
                 return
             #清理工作，停止游戏，关闭线程,强制结束游戏
-            if self.aiThread.isRunning():
+            if self.aiThread and self.aiThread.isRunning():
                 self.aiThread.stop()
                 self.aiThread.wait()
-            global WaitForCommand
+            global WaitForCommand, WaitForIni, WaitForAni
+            WaitForIni.wakeAll()
+            WaitForAni.wakeAll()
             WaitForCommand.wakeAll()
-            if self.playTread.isRunning():
+            if self.playThread and self.playThread.isRunning():
                 self.playTread.stop()
                 self.playThread.wait()
 #            if self.commandThread.running():
@@ -379,7 +399,11 @@ class HumanvsAi(QWidget, ui_humanvsai.Ui_HumanvsAi):
             self.nowRound = 0
         self.willReturn.emit()
 
-
+    def on_threadF(self, arg):
+        if arg:
+            self.playThread = None
+        else:
+            self.aiThread = None
 
 #    def on_waitforC(self):
 #        self.commThread = CommThread(self, self.getComm)
