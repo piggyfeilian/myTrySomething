@@ -6,6 +6,7 @@ from PyQt4.QtGui import *
 from PyQt4.QtCore import *
 import ui_humanvsai
 from Humanai_Replay_event import *
+from info_widget import *
 import os,sio,basic,socket,time
 from herotypedlg import GetHeroTypeDlg
 
@@ -204,6 +205,7 @@ class Ui_Player(QThread):
 #        pass
 
 class HumanvsAi(QWidget, ui_humanvsai.Ui_HumanvsAi):
+    willReturn = pyqtSignal()
     def __init__(self, parent = None):
         super(HumanvsAi, self).__init__(parent)
         self.setupUi(self)
@@ -224,20 +226,24 @@ class HumanvsAi(QWidget, ui_humanvsai.Ui_HumanvsAi):
         self.replayWindow = HumanReplay(self.scene)
         self.getComm = self.replayWindow.GetCommand
 
+        self.infoWidget = InfoWidget()
+
         #layout
+        self.verticalLayout_2.addWidget(self.infoWidget)
         self.verticalLayout_3.addWidget(self.replayWindow)
 #        self.
 
         #connect
         self.connect(self.replayWindow, SIGNAL("commandFinished"), self.on_recvC)
-        self.connect(self.replayWindow, SIGNAL("unitSelected"), self.on_unitS)
-        self.connect(self.replayWindow, SIGNAL("mapSelected"), self.on_mapS)
+#        self.connect(self.replayWindow, SIGNAL("unitSelected"), self.on_unitS)
+#        self.connect(self.replayWindow, SIGNAL("mapSelected"), self.on_mapS)
+        self.connect(self.replayWindow, SIGNAL("unitSelected"), self.infoWidget.newUnitInfo)
+        self.connect(self.replayWindow, SIGNAL("mapSelected"), self.infoWidget.newMapInfo)
         self.replayWindow.moveAnimEnd.connect(self.on_aniFinished)
         self.connect(self, SIGNAL("ableToPlay()"), self.on_ablePlay)
         #other
         pal = self.scoLabel1.palette()
-        br = QBrush()
-        br.setStyle(Qt.Dense3Pattern)
+        br = QBrush(Qt.Dense3Pattern)
         br.setColor(QColor(255,51,0,200))
         pal.setBrush(QPalette.Window, br)
         self.scoLabel1.setPalette(pal)
@@ -367,7 +373,7 @@ class HumanvsAi(QWidget, ui_humanvsai.Ui_HumanvsAi):
 
             self.started = False
             self.nowRound = 0
-        self.emit(SIGNAL("willReturn()"))
+        self.willReturn.emit()
 
 
 
@@ -387,7 +393,7 @@ class HumanvsAi(QWidget, ui_humanvsai.Ui_HumanvsAi):
         finally:
             self.playThread.lock.unlock()
             WaitForCommand.wakeAll()
-
+            print "command:", cmd.move, cmd.order,cmd.target
     def on_getHero(self):
         dialog = GetHeroTypeDlg(self)
         name = ""
@@ -455,6 +461,7 @@ class HumanvsAi(QWidget, ui_humanvsai.Ui_HumanvsAi):
         self.replayWindow.UpdateEndData(rCommand, reInfo)
         self.setRoundEndInfo(rCommand, reInfo)
         self.gameEndInfo.append((rCommand,reInfo))
+        print "rCommand recv:", rCommand.move, rCommand.order, rCommand.target
         #第一次接收直接开始播放
         if len(self.gameEndInfo) == 1:
             self.Ani_Finished = False
@@ -553,11 +560,11 @@ class HumanvsAi(QWidget, ui_humanvsai.Ui_HumanvsAi):
         self.playerLabel.setText(name)
         #要展示英雄信息的话也在这里做
 
-    def on_unitS(self, unit):
-        pass
+#    def on_unitS(self, unit):
+#        self.infoWidget.newUnitInfo(unit)
 
-    def on_mapS(self, mapInfo):
-        pass
+#    def on_mapS(self, mapInfo):
+#        self.infoWidget.newMapInfo(mapInfo)
 
     def setRoundBegInfo(self, rbInfo):
         pass

@@ -141,15 +141,29 @@ class HumanReplay(QGraphicsView):
             QGraphicsView.mousePressEvent(self, event)
             return
 
+            
         pos = event.pos()
-        if not self.focusUnit.isVisible():
-            self.focusUnit.setVisible(True)
         item = self.itemAt(pos)
-        #还没有做发出展示信号的部分
-        if item == self.focusUnit:
-            return
+        items = self.items(pos)
         if not item:
             return
+        #右键发出信息,不设置focus
+        if event.button() == Qt.RightButton:
+            for it in items:
+                if isinstance(it, SoldierUnit):
+                    self.emit(SIGNAL("unitSelected"),it.obj)
+                    print "emit unit", it.obj.kind
+                elif isinstance(it, MapUnit):
+                    self.emit(SIGNAL("mapSelected"), it.obj)
+                    print "emit map", it.obj.kind
+            return
+        #还没有做发出展示信号的部分
+        if not self.focusUnit.isVisible():
+            self.focusUnit.setVisible(True)
+
+        if self.focusUnit in items:
+            return
+
         if not self.now_state == self.State_Move:
             self.focusUnit.setPos(item.corX, item.corY)
         if self.now_state == self.State_No_Comm or self.now_state == self.State_Opr:
@@ -322,7 +336,7 @@ class HumanReplay(QGraphicsView):
         movAnim = QPropertyAnimation(move_unit, "pos")
         movAnim.setDuration(steps * TIME_PER_GRID)
         movAnim.setStartValue(GetPos(move_unit.obj.position[0], move_unit.obj.position[1]))
-        print move_unit.obj.position
+
         for i in range(steps):
             pos = GetPos(route[i][0], route[i][1])
             movAnim.setKeyValueAt(float(i + 1)/steps, pos)
@@ -340,7 +354,7 @@ class HumanReplay(QGraphicsView):
         if effect == -1:#超出范围或未攻击(已死亡)
             return QPauseAnimation(500), []
         print "attack kindlalala", move_unit.obj.kind
-        attackInd = AttackIndUnit(move_pos[0], move_pos[1],":attack_ind%d.png" %move_unit.obj.kind)
+        attackInd = AttackIndUnit(move_pos[0], move_pos[1],":attack_ind1.png")# %move_unit.obj.kind)
         attackInd.setVisible(False)
         targetInd = TargetIndUnit(self.UnitBase[attack_target[0]][attack_target[1]].corX,self.UnitBase[attack_target[0]][attack_target[1]].corY)
         sound = QSound(":attack_sound.wav")
@@ -361,7 +375,7 @@ class HumanReplay(QGraphicsView):
         ani = QPropertyAnimation(attackInd, "opacity")
         ani.setDuration(TOTAL_TIME)
         ani.setStartValue(1)
-        ani.setKeyValueAt(0.8, 0.3)
+        ani.setKeyValueAt(0.8, 0.9)
         ani.setKeyValueAt(0.9, 0.8)
         ani.setEndValue(0)
         showAtkAnim.addAnimation(ani)
@@ -415,7 +429,7 @@ class HumanReplay(QGraphicsView):
         dieAni = QPropertyAnimation(unit, "opacity")
         dieAni.setDuration(TOTAL_TIME)
         dieAni.setStartValue(1)
-        dieAni.setStartValue(0)
+        dieAni.setEndValue(0)
         dieAnim.addAnimation(dieAni)
         dieAni1 = QPropertyAnimation(dieInd, "opacity")
         dieAni1.setDuration(TOTAL_TIME)
@@ -424,7 +438,7 @@ class HumanReplay(QGraphicsView):
         dieAni1.setKeyValueAt(0.4, 0.8)
         dieAni1.setKeyValueAt(0.7, 0.2)
         dieAni1.setKeyValueAt(0.9, 0.6)
-        dieAni1.setKeyValueAt(1, 0)
+        dieAni1.setEndValue(0)
         dieAnim.addAnimation(dieAni1)
 
         return dieAnim, [dieInd]
