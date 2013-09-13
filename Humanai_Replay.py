@@ -259,7 +259,8 @@ class HumanReplay(QGraphicsView):
         self.setSoldier(begInfo.base)
         self.latestStatus = 0
         self.gameBegInfo.append(frInfo)
-#        self.stateMachine.start()
+        if not self.stateMachine.isRunning():
+            self.stateMachine.start()
 
     def UpdateBeginInfo(self, rbInfo):
         self.gameBegInfo.append(rbInfo)

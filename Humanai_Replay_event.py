@@ -114,13 +114,17 @@ class HumanReplay(QGraphicsView):
         for state in self.stateList:
             self.connect(state, SIGNAL("entered()"), self.on_Entered)
         self.connect(self.State_Target, SIGNAL("exited()"), self.on_Exited)
-        self.stateMachine.start()
+#        self.stateMachine.start()
     #begin to get command
     def GetCommand(self):
-        self.commBeg.emit()
-        print "emit"
+#        QTimer.singleShot(0, self, SLOT("getCommand()"))
+#    @pyqtSlot()
+#    def getCommand(self):
         self.nowMoveUnit = self.UnitBase[self.gameBegInfo[-1].id[0]][self.gameBegInfo[-1].id[1]]
-        print self.nowMoveUnit.obj.position
+#        self.commBeg.emit()
+#        print "emit"
+        QTimer.singleShot(0, self, SIGNAL("commBeg()"))
+
     #event handlers
     def mouseMoveEvent(self, event):
         if not self.run:
@@ -271,6 +275,7 @@ class HumanReplay(QGraphicsView):
             change = self.mapChangeInfo[round_]
             map_[change[1][1]][change[1][0]] = basic.Map_Basic(change[0])
         return map_
+
     def setMap(self, map_):
         self.resetMap()
         self.width = len(map_[0])
@@ -291,6 +296,7 @@ class HumanReplay(QGraphicsView):
                 new_unit.setPos(new_unit.corX, new_unit.corY)
                 self.UnitBase[i].append(new_unit)
         print "unitbase",len(self.UnitBase)#for test
+
     def Initialize(self, begInfo,frInfo):
         self.setMap(begInfo.map)
         self.iniMapInfo = begInfo.map
@@ -299,7 +305,8 @@ class HumanReplay(QGraphicsView):
         self.gameBegInfo.append(frInfo)
         self.run = True
         self.mouseUnit.setVis(True)
-#        self.stateMachine.start()
+        if not self.stateMachine.isRunning():
+            self.stateMachine.start()
 
     def UpdateBeginData(self, rbInfo):
         self.gameBegInfo.append(rbInfo)

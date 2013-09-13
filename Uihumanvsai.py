@@ -5,7 +5,7 @@
 from PyQt4.QtGui import *
 from PyQt4.QtCore import *
 import ui_humanvsai
-from Humanai_Replay_event import *
+from Humanai_Replay_event import HumanReplay
 from info_widget import *
 import os,sio,basic,socket,time
 from herotypedlg import GetHeroTypeDlg
@@ -209,6 +209,9 @@ class HumanvsAi(QWidget, ui_humanvsai.Ui_HumanvsAi):
     def __init__(self, parent = None):
         super(HumanvsAi, self).__init__(parent)
         self.setupUi(self)
+        pal = self.palette()
+        pal.setBrush(QPalette.Window, QBrush(Qt.NoBrush))
+        self.setPalette(pal)
 
 
         self.aiPath = ""
@@ -224,6 +227,7 @@ class HumanvsAi(QWidget, ui_humanvsai.Ui_HumanvsAi):
         #widget
         self.scene = QGraphicsScene()
         self.replayWindow = HumanReplay(self.scene)
+
         self.getComm = self.replayWindow.GetCommand
 
         self.infoWidget = InfoWidget()
@@ -359,18 +363,18 @@ class HumanvsAi(QWidget, ui_humanvsai.Ui_HumanvsAi):
             if answer == QMessageBox.No:
                 return
             #清理工作，停止游戏，关闭线程,强制结束游戏
-            if self.aiThread.running():
+            if self.aiThread.isRunning():
                 self.aiThread.stop()
                 self.aiThread.wait()
             global WaitForCommand
             WaitForCommand.wakeAll()
-            if self.playTread.running():
+            if self.playTread.isRunning():
                 self.playTread.stop()
                 self.playThread.wait()
 #            if self.commandThread.running():
 #                self.commandThread.stop()
 #                self.commandThread.wait()
-
+            self.reset()
             self.started = False
             self.nowRound = 0
         self.willReturn.emit()
