@@ -151,15 +151,15 @@ class HumanReplay(QGraphicsView):
         items = self.items(pos)
         if not item:
             return
-        #右键发出信息,不设置focus
+        #右键发出信息,但不设置focus
+        for it in items:
+            if isinstance(it, SoldierUnit):
+                self.emit(SIGNAL("unitSelected"),it.obj)
+                print "emit unit", it.obj.kind
+            elif isinstance(it, MapUnit):
+                self.emit(SIGNAL("mapSelected"), it.obj)
+                print "emit map", it.obj.kind
         if event.button() == Qt.RightButton:
-            for it in items:
-                if isinstance(it, SoldierUnit):
-                    self.emit(SIGNAL("unitSelected"),it.obj)
-                    print "emit unit", it.obj.kind
-                elif isinstance(it, MapUnit):
-                    self.emit(SIGNAL("mapSelected"), it.obj)
-                    print "emit map", it.obj.kind
             return
         #还没有做发出展示信号的部分
         if not self.focusUnit.isVisible():
@@ -362,8 +362,9 @@ class HumanReplay(QGraphicsView):
             return QPauseAnimation(500), []
         print "attack kindlalala", move_unit.obj.kind
         attackInd = AttackIndUnit(move_pos[0], move_pos[1],":attack_ind1.png")# %move_unit.obj.kind)
-        attackInd.setVisible(False)
+        attackInd.setOpacity(0)
         targetInd = TargetIndUnit(self.UnitBase[attack_target[0]][attack_target[1]].corX,self.UnitBase[attack_target[0]][attack_target[1]].corY)
+        targetInd.setOpacity(0)
         sound = QSound(":attack_sound.wav")
 
         self.scene.addItem(attackInd)
@@ -381,7 +382,8 @@ class HumanReplay(QGraphicsView):
 
         ani = QPropertyAnimation(attackInd, "opacity")
         ani.setDuration(TOTAL_TIME)
-        ani.setStartValue(1)
+        ani.setStartValue(0)
+        ani.setKeyValueAt(0.1, 1)
         ani.setKeyValueAt(0.8, 0.9)
         ani.setKeyValueAt(0.9, 0.8)
         ani.setEndValue(0)
@@ -389,7 +391,8 @@ class HumanReplay(QGraphicsView):
 
         ani = QPropertyAnimation(targetInd, "opacity")
         ani.setDuration(TOTAL_TIME)
-        ani.setStartValue(1)
+        ani.setStartValue(0)
+        ani.setKeyValueAt(0.1, 1)
         ani.setKeyValueAt(0.99, 1)
 #        ani.setKeyValueAt(1, 1)
         ani.setEndValue(0)
@@ -485,6 +488,7 @@ class HumanReplay(QGraphicsView):
             anim, item = self.attackAnimation(self.UnitBase[cmd.target[0]][cmd.target[1]], (self.UnitBase[cmd.target[0]][cmd.target[1]].corX,\
                                                                                                 self.UnitBase[cmd.target[0]][cmd.target[1]].corY),
                                                   unit_move.idNum, endInfo.effect[1])
+            self.animationItem.extend(item)
             if endInfo.base[unit_id[0]][unit_id[1]].life == 0:
                 anim, item = self.dieAnimation(unit_id)
                 self.animation.extend(item)
