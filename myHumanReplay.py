@@ -219,19 +219,26 @@ class TargetIndUnit(AbstractUnit):
 #        painter.setCompositionMode(QPainter.CompositionMode_Multiply)
         painter.drawRect(QRect(0, 0, UNIT_WIDTH + EDGE_WIDTH, UNIT_HEIGHT + EDGE_WIDTH))
         painter.restore()
-class EffectIndUnit(QGraphicsObject):
+class EffectIndUnit(QGraphicsTextItem):
     def __init__(self, text, parent = None):
-        super(EffectIndUnit, self).__init__(parent)
+        super(EffectIndUnit, self).__init__(text, parent)
         self.text = text
-
-    def boundingRect(self):
-        return QRectF(-EXTRA_WIDTH, 0, UNIT_WIDTH + EDGE_WIDTH + 2 * EXTRA_WIDTH, 30)
-    def paint(self, painter, option, widget = None):
+        font = self.font()
+        font.setPointSize(font.pointSize() * 2)
+        font.setBold(True)
+        self.setFont(font)
+        self.setDefaultTextColor(QColor(Qt.red).darker())
+#    def boundingRect(self):
+#        return QRectF(-EXTRA_WIDTH, 0, UNIT_WIDTH + EDGE_WIDTH + 2 * EXTRA_WIDTH, 30)
+#    def paint(self, painter, option, widget = None):
 #        painter.setPen(Qt.NoPen)
-        painter.save()
-        painter.setPen(QColor(Qt.red).lighter())
-        painter.drawText(self.boundingRect(), self.text, QTextOption(Qt.AlignHCenter))
-        painter.restore()
+#        painter.save()
+#        pen = QPen()
+#        pen.setColor(QColor(Qt.red).darker())
+#        pen.setWidth(6)
+#        painter.setPen(pen)
+#        painter.drawText(self.boundingRect(), self.text, QTextOption(Qt.AlignHCenter))
+#        painter.restore()
 class DieIndUnit(AbstractUnit):
     def __init__(self, x = 0, y = 0, parent = None):
         super(DieIndUnit, self).__init__(x, y, parent)

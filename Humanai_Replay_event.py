@@ -135,9 +135,10 @@ class HumanReplay(QGraphicsView):
         pos = event.pos()
         if not self.mouseUnit.isVisible():
             self.mouseUnit.setVisible(True)
-        item = self.itemAt(pos)
-        if not item:
+        items = self.itemAt(pos)
+        if not items:
             return
+        item = items[-1]
         if self.mouseUnit.corX == item.corX and self.mouseUnit.corY == item.corY:
             return
         self.mouseUnit.setPos(item.corX, item.corY)
@@ -362,8 +363,8 @@ class HumanReplay(QGraphicsView):
         TOTAL_TIME = 2000
 
         if effect == -1:#超出范围或未攻击(已死亡)
+            #可以展示超出范围等信息
             return QPauseAnimation(500), []
-        print "attack kindlalala", move_unit.obj.kind
         attackInd = AttackIndUnit(move_pos[0], move_pos[1],":attack_ind1.png")# %move_unit.obj.kind)
         attackInd.setOpacity(0)
         targetInd = TargetIndUnit(self.UnitBase[attack_target[0]][attack_target[1]].corX,self.UnitBase[attack_target[0]][attack_target[1]].corY)
@@ -420,8 +421,9 @@ class HumanReplay(QGraphicsView):
         showAtkAnim.addAnimation(ani)
         ani = QPropertyAnimation(label, "pos")
         ani.setDuration(TOTAL_TIME)
-        ani.setStartValue(label.pos())
-        ani.setEndValue(label.pos() + QPointF(0,-20))
+        pos1 = label.pos()
+        ani.setStartValue(pos1)
+        ani.setEndValue(pos1 + QPointF(0,-20))
         ani.setEasingCurve(QEasingCurve.OutCubic)
         item = [attackInd, targetInd, label]
         return showAtkAnim, item
@@ -510,8 +512,8 @@ class HumanReplay(QGraphicsView):
         #skill
     #展示round_, status的场面
     def GoToRound(self, round_, status):
-        if self.animation:
-            self.TerminateAni()
+#        if self.animation:
+        self.TerminateAni()
 
         if round_ * 2 + status > self.latestRound * 2 + self.latestStatus:
             raise REPLAYERROR("not update to that status")

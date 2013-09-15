@@ -226,9 +226,9 @@ class HumanvsAi(QWidget, ui_humanvsai.Ui_HumanvsAi):
     def __init__(self, parent = None):
         super(HumanvsAi, self).__init__(parent)
         self.setupUi(self)
-        pal = self.palette()
-        pal.setBrush(QPalette.Window, QBrush(Qt.NoBrush))
-        self.setPalette(pal)
+    #    pal = self.palette()
+    #    pal.setBrush(QPalette.Window, QBrush(Qt.NoBrush))
+    #    self.setPalette(pal)
 
 
         self.aiPath = ""
