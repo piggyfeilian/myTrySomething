@@ -49,6 +49,8 @@ class HumanReplay(QGraphicsView):
         self.animation = None
         self.setMouseTracking(True)
         #游戏记录变量
+        self.nowRound = 0
+        self.nowStatus = 0
         self.iniMapInfo = None
         self.latestStatus = 1
         self.latestRound = 0
@@ -272,8 +274,9 @@ class HumanReplay(QGraphicsView):
                 for change in self.mapChangeInfo[i]:
                     map_[change[1][1]][change[1][0]] = basic.Map_Basic(change[0])
         if status:
-            change = self.mapChangeInfo[round_]
-            map_[change[1][1]][change[1][0]] = basic.Map_Basic(change[0])
+            change_ = self.mapChangeInfo[round_]
+            for change in change_:
+                map_[change[1][1]][change[1][0]] = basic.Map_Basic(change[0])
         return map_
 
     def setMap(self, map_):
@@ -405,12 +408,13 @@ class HumanReplay(QGraphicsView):
                                   )
         else:
             label = EffectIndUnit("Miss")
-        label.setVisible(False)
+        label.setOpacity(0)
         self.scene.addItem(label)
         label.setPos(GetPos(targetInd.corX, targetInd.corY)+QPointF(0,-20))
         ani = QPropertyAnimation(label, "opacity")
         ani.setDuration(TOTAL_TIME)
-        ani.setStartValue(1)
+        ani.setStartValue(0)
+        ani.setKeyValueAt(0.05, 1)
         ani.setEndValue(0)
 
         showAtkAnim.addAnimation(ani)
@@ -508,6 +512,7 @@ class HumanReplay(QGraphicsView):
     def GoToRound(self, round_, status):
         if self.animation:
             self.TerminateAni()
+
         if round_ * 2 + status > self.latestRound * 2 + self.latestStatus:
             raise REPLAYERROR("not update to that status")
 

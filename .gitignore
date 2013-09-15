@@ -1,5 +1,7 @@
 #gitignore for pyqt project
 *.py[cod]
-
+#emacs
 [#]*[#]
 *~
+#samples
+SampleMap/

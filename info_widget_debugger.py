@@ -12,6 +12,7 @@ NumToUnitType = {0:"SABER",1:"LANCER",2:"ARCHER",3:"DRAGON RIDER",
                 4:"WARRIOR", 5:"WIZARD", 6:"HERO_1", 7:"HERO_2",
                 8:"HERO_3"}
 NumToActionType = {0:"待机", 1:"攻击", 2:"技能"}
+NumToEffect = {0:"未命中", 1:"命中", -1:"未进行"}
 StyleSheet = """
 QLineEdit{
 background-color: rgb(255, 255, 127);
@@ -22,41 +23,44 @@ class InfoWidget(QTabWidget):
     def __init__(self, parent =None):
         super(InfoWidget, self).__init__(parent)
 
-#        self.infoWidget_Game = InfoWidget1()
+        self.infoWidget_Game = InfoWidget1()
         self.infoWidget_Unit = InfoWidget2()
         self.infoWidget_Map = InfoWidget3()
-#        self.addTab(self.infoWidget_Game, "Game info")
+        self.addTab(self.infoWidget_Game, "Game info")
         self.addTab(self.infoWidget_Unit, "Unit info")
         self.addTab(self.infoWidget_Map, "Map info")
-#        self.setTabToolTip(1, "the global infos and game runing infos")
-        self.setTabToolTip(1, "the right-button-pressed unit's infos")
-        self.setTabToolTip(2, "the right-button-pressed map-grid's infos")
+        self.setTabToolTip(1, "the global infos and game runing infos")
+        self.setTabToolTip(2, "the selected unit's infos")
+        self.setTabToolTip(3, "the selected map-grid's infos")
 
     #reimplement close event:仅仅设置它不可见,而不是关闭
-#    def closeEvent(self, event):
-#        self.hide()
-#        event.ignore()
+    def closeEvent(self, event):
+        self.hide()
+        event.ignore()
     #为了同步主界面窗口菜单的显示加入的event handler
-#    def hideEvent(self, event):
- #       self.emit(SIGNAL("hided()"))
+    def hideEvent(self, event):
+        self.emit(SIGNAL("hided()"))
     #展现战斗信息
-#    def beginRoundInfo(self, beginfo):
-#        self.infoWidget_Game.resetEnd()
-#        self.infoWidget_Game.setUnitinfo("%s" %beginfo.id)
-#        self.beg_Flag = 1
-#    def endRoundInfo(self, cmd, endinfo):
-#        self.infoWidget_Game.setCmdinfo("move to %s,%s %s" %(cmd.move,
-#                                                             NumToActionType[cmd.order],
-#                                                             cmd.target))
-#        self.infoWidget_Game.setEffectinfo("%s" %endinfo.effect)
-#        self.infoWidget_Game.setScoreinfo("%d : %d" %(endinfo.score[0],endinfo.score[1]))
-#        self.beg_Flag = 0
-#    def goToGameInfo(self, _round, round_info):
-#        self.sender = self.sender()
-#        self.infoWidget_Game.setRoundInfo(_round)
-#
-#        if self.sender == None:
-#            pass
+    def beginRoundInfo(self, beginfo):
+        self.infoWidget_Game.resetEnd()
+        self.infoWidget_Game.setUnitinfo("Team %d Soldier %d" %(beginfo.id[0],beginfo.id[1]))
+        self.beg_Flag = 1
+    def endRoundInfo(self, cmd, endinfo):
+        self.infoWidget_Game.setCmdinfo(QString.fromUtf8("move to %s,%s" %(cmd.move,
+                                                             NumToActionType[cmd.order]
+                                                             )))
+        if cmd.order != 0:
+            self.infoWidget_Game.setTargetinfo(QString.fromUtf8("Team %d Soldier %d" %(cmd.target[0], cmd.target[1])))
+        self.infoWidget_Game.setEffectinfo(QString.fromUtf8("攻击%s，反击%s" %(NumToEffect[endinfo.effect[0]],
+                                                              NumToEffect[endinfo.effect[1]])))
+        self.infoWidget_Game.setScoreinfo("%d : %d" %(endinfo.score[0],endinfo.score[1]))
+        self.beg_Flag = 0
+    def goToGameInfo(self, _round, round_info):
+        self.sender = self.sender()
+        self.infoWidget_Game.setRoundInfo(_round)
+
+        if self.sender == None:
+            pass
         #待实现,在跳转回合时从回放里设置的类传出的信号设置
     #展现单位,地形信息
     def newUnitInfo(self, base_unit):
@@ -67,11 +71,12 @@ class InfoWidget(QTabWidget):
         self.infoWidget_Unit.info_speed.setText("%d" %base_unit.speed)
         self.infoWidget_Unit.info_moverange.setText("%d" %base_unit.move_range)
         self.infoWidget_Unit.info_attackrange.setText("%s" %base_unit.attack_range)
-
+#        self.setCurrentWidget(self.infoWidget_Unit)
     def newMapInfo(self, map_basic):
         self.infoWidget_Map.info_type.setText(NumToMapType[map_basic.kind])
         self.infoWidget_Map.info_score.setText("%d" %map_basic.score)
         self.infoWidget_Map.info_consumption.setText("%d" %map_basic.move_consumption)
+#        self.setCurrentWidget(self.infoWidget_Map)
 
 #展示游戏基础信息
 class InfoWidget1(QWidget):
@@ -86,9 +91,6 @@ class InfoWidget1(QWidget):
         self.label_mapfile = QLabel("MAP file path:")
         self.info_mapfile = QLineEdit("")
         self.info_mapfile.setReadOnly(True)
-        self.label_round = QLabel("current round:")
-        self.info_round = QLineEdit("")
-        self.info_round.setReadOnly(True)
         self.label_unit = QLabel("current aciton_unit:")
         self.info_unit = QLineEdit("")
         self.info_unit.setReadOnly(True)
@@ -97,6 +99,9 @@ class InfoWidget1(QWidget):
         self.info_time.setReadOnly(True)
         self.label_cmd = QLabel("command:")
         self.info_cmd = QLineEdit("")
+        self.info_cmd.setReadOnly(True)
+        self.label_target = QLabel("target:")
+        self.info_target = QLineEdit("")
         self.info_cmd.setReadOnly(True)
         self.label_effect = QLabel("attack effect:")
         self.info_effect = QLineEdit("")
@@ -111,15 +116,14 @@ class InfoWidget1(QWidget):
         self.layout.addWidget(self.info_aifile2, 1, 1)
         self.layout.addWidget(self.label_mapfile, 2, 0)
         self.layout.addWidget(self.info_mapfile, 2, 1)
-        self.layout.addWidget(self.label_round, 3, 0)
-
-        self.layout.addWidget(self.info_round, 3, 1)
+        self.layout.addWidget(self.label_time, 3, 0)
+        self.layout.addWidget(self.info_time, 3, 1)
         self.layout.addWidget(self.label_unit, 4, 0)
         self.layout.addWidget(self.info_unit, 4, 1)
-        self.layout.addWidget(self.label_time, 5, 0)
-        self.layout.addWidget(self.info_time, 5, 1)
-        self.layout.addWidget(self.label_cmd, 6, 0)
-        self.layout.addWidget(self.info_cmd, 6, 1)
+        self.layout.addWidget(self.label_cmd, 5, 0)
+        self.layout.addWidget(self.info_cmd, 5, 1)
+        self.layout.addWidget(self.label_target, 6, 0)
+        self.layout.addWidget(self.info_target, 6, 1)
         self.layout.addWidget(self.label_effect, 7, 0)
         self.layout.addWidget(self.info_effect, 7, 1)
         self.layout.addWidget(self.label_score, 8, 0)
@@ -136,20 +140,20 @@ class InfoWidget1(QWidget):
             
     def setMapFileinfo(self, str):
         self.info_mapfile.setText(str)
-     #逻辑接口里把回合和单位行动周期搞混了,这个回合是什么呢...
-    def setRoundinfo(self, r):
-        self.info_round.setText(r)
     def setUnitinfo(self, str):
         self.info_unit.setText(str)
     def setTimeinfo(self, str):
         self.info_time.setText(str)
     def setCmdinfo(self, str):
         self.info_cmd.setText(str)
+    def setTargetinfo(self, str):
+        self.info_target.setText(str)
     def setEffectinfo(self,str):
         self.info_effect.setText(str)
     def setScoreinfo(self, str):
         self.info_score.setText(str)
     def resetEnd(self):
+        self.setTargetinfo("")
         self.setEffectinfo("")
         self.setCmdinfo("")
 #展示单位基础信息
@@ -182,9 +186,10 @@ class InfoWidget2(QWidget):
         self.info_attackrange = QLabel("")
         self.infos.append(self.info_attackrange)
 
+
         for info in self.infos:
-            info.setFrameStyle(QFrame.StyledPanel|QFrame.Sunken)
-            info.setSizePolicy(QSizePolicy(QSizePolicy.Preferred, QSizePolicy.Fixed))
+            info.setFrameStyle(QFrame.StyledPanel|QFrame.Raised)
+
 
         self.layout = QGridLayout()
         self.layout.addWidget(self.label_type, 0, 0)
@@ -201,8 +206,11 @@ class InfoWidget2(QWidget):
         self.layout.addWidget(self.info_moverange, 5, 1)
         self.layout.addWidget(self.label_attackrange, 6, 0)
         self.layout.addWidget(self.info_attackrange, 6, 1)
+        self.layout1 = QVBoxLayout()
+        self.layout1.addLayout(self.layout)
+        self.layout1.addStretch()
 
-        self.setLayout(self.layout)
+        self.setLayout(self.layout1)
 
 
 #展示地图基础信息
@@ -222,7 +230,6 @@ class InfoWidget3(QWidget):
 
         for info in self.infos:
             info.setFrameStyle(QFrame.StyledPanel|QFrame.Sunken)
-            info.setSizePolicy(QSizePolicy(QSizePolicy.Preferred, QSizePolicy.Fixed))
 
         self.layout = QGridLayout()
         self.layout.addWidget(self.label_type, 0, 0)
@@ -231,8 +238,11 @@ class InfoWidget3(QWidget):
         self.layout.addWidget(self.info_score, 1, 1)
         self.layout.addWidget(self.label_consumption, 2, 0)
         self.layout.addWidget(self.info_consumption, 2, 1)
+        self.layout1 = QVBoxLayout()
+        self.layout1.addLayout(self.layout)
+        self.layout1.addStretch()
 
-        self.setLayout(self.layout)
+        self.setLayout(self.layout1)
 
 
 

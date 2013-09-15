@@ -230,7 +230,7 @@ class EffectIndUnit(QGraphicsObject):
 #        painter.setPen(Qt.NoPen)
         painter.save()
         painter.setPen(QColor(Qt.red).lighter())
-        painter.drawText(self.boundingRect(), text, QTextOption(Qt.AlignHCenter))
+        painter.drawText(self.boundingRect(), self.text, QTextOption(Qt.AlignHCenter))
         painter.restore()
 class DieIndUnit(AbstractUnit):
     def __init__(self, x = 0, y = 0, parent = None):
