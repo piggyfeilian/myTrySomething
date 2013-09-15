@@ -135,7 +135,7 @@ class HumanReplay(QGraphicsView):
         pos = event.pos()
         if not self.mouseUnit.isVisible():
             self.mouseUnit.setVisible(True)
-        items = self.itemAt(pos)
+        items = self.items(pos)
         if not items:
             return
         item = items[-1]
