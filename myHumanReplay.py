@@ -211,7 +211,7 @@ class TargetIndUnit(AbstractUnit):
     def paint(self, painter, option, widget = None):
         painter.save()        
         pen = QPen()
-        pen.setWidth(EDGE_WIDTH*2)
+        pen.setWidth(EDGE_WIDTH)
         pen.setCapStyle(Qt.RoundCap)
         pen.setJoinStyle(Qt.RoundJoin)
         pen.setColor(QColor(Qt.red))

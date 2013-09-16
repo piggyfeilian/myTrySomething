@@ -244,7 +244,7 @@ class AiReplayWidget(QWidget):
         else:
             pausetext = "Runing"
         self.pauseLabel.setText(pausetext)
-
+        self.pauseButton.setEnabled(self.started)
     def okToPlay(self):
         if self.ctrlSlider.nowRound == self.ctrlSlider.totalRound and self.ctrlSlider.totalStatus == 0:
             return False
@@ -264,7 +264,6 @@ class AiReplayWidget(QWidget):
                         self.replayWidget.Play()
                     #自动跳到下一回合begin开始播放
                     elif self.ctrlSlider.totalRound > self.ctrlSlider.nowRound:
-                        time.sleep(2)
                         self.ctrlSlider.changeNowRound(a + 1, 0)
                     else:
                         self.isPaused = True
@@ -332,7 +331,7 @@ class AiReplayWidget(QWidget):
     def reset(self):
         self.started = False
         #清空data
-        self.replayWidget.data = None
+        self.replayWidget.reset()
         #重置进度条
         self.ctrlSlider.reset()
         self.updateUI()

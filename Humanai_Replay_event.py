@@ -267,7 +267,7 @@ class HumanReplay(QGraphicsView):
                 ind_unit.setVisible(False)
             list_.append(ind_unit)
             
-    #得到指定回合的地图,通过每回合mapchange计算
+    #得到指定回合的地图,通过每回合mapchange计算,也可以采用占用内存提高速度的办法一开始就计算好每回合地图
     def getMap(self, round_, status):
         map_ = copy.copy(self.iniMapInfo)
         for i in range(round_):
@@ -358,7 +358,7 @@ class HumanReplay(QGraphicsView):
             movAnim.setEndValue(GetPos(move_unit.obj.position[0], move_unit.obj.position[1]))
         return movAnim, []
 
-    def attackAnimation(self, move_unit,move_pos, attack_target, effect):
+    def attackAnimation(self, move_unit,move_pos, attack_target, target_pos, effect):
         ATTACK_TIME = 1500
         TOTAL_TIME = 2000
 
@@ -367,14 +367,14 @@ class HumanReplay(QGraphicsView):
             return QPauseAnimation(500), []
         attackInd = AttackIndUnit(move_pos[0], move_pos[1],":attack_ind1.png")# %move_unit.obj.kind)
         attackInd.setOpacity(0)
-        targetInd = TargetIndUnit(self.UnitBase[attack_target[0]][attack_target[1]].corX,self.UnitBase[attack_target[0]][attack_target[1]].corY)
+        targetInd = TargetIndUnit(0,0)
         targetInd.setOpacity(0)
         sound = QSound(":attack_sound.wav")
 
         self.scene.addItem(attackInd)
         self.scene.addItem(targetInd)
         attackInd.setPos(attackInd.corX, attackInd.corY)
-        targetInd.setPos(targetInd.corX, targetInd.corY)
+        targetInd.setPos(target_pos[0],target_pos[1])
 
         showAtkAnim = QParallelAnimationGroup()
         ani = QPropertyAnimation(attackInd, "pos")
@@ -461,17 +461,19 @@ class HumanReplay(QGraphicsView):
 
     def Play(self):
         #回合末没有动画,先调转再调用
+        print "play called"
         if self.nowStatus:
             return
         #还没有更新完
         if len(self.gameEndInfo) < self.nowRound + 1:
             return
         self.TerminateAni()
+
         unit_id = self.gameBegInfo[self.nowRound].id
         unit_move = self.UnitBase[unit_id[0]][unit_id[1]]
         cmd = self.gameEndInfo[self.nowRound][0]
         endInfo = self.gameEndInfo[self.nowRound][1]
-
+        print "begin to add animation"
         self.animation = QSequentialAnimationGroup()
 
         #移动动画
@@ -480,10 +482,11 @@ class HumanReplay(QGraphicsView):
         self.animationItem.extend(item)
         #attack
         if cmd.order == 1:
-            ani, item = self.attackAnimation(unit_move, cmd.move,cmd.target, endInfo.effect[0])
+            ani, item = self.attackAnimation(unit_move, cmd.move, cmd.target,
+                                             self.UnitBase[cmd.target[0]][cmd.target[1]].obj.position,
+                                             endInfo.effect[0])
             self.animationItem.extend(item)
             self.animation.addAnimation(ani)
-            print "add animation"
             #target die
             if endInfo.base[cmd.target[0]][cmd.target[1]].life == 0:
                 anim, item = self.dieAnimation(cmd.target)
@@ -493,8 +496,9 @@ class HumanReplay(QGraphicsView):
             #fight back
             anim, item = self.attackAnimation(self.UnitBase[cmd.target[0]][cmd.target[1]], (self.UnitBase[cmd.target[0]][cmd.target[1]].corX,\
                                                                                                 self.UnitBase[cmd.target[0]][cmd.target[1]].corY),
-                                                  unit_move.idNum, endInfo.effect[1])
+                                              unit_id ,cmd.move, endInfo.effect[1])
             self.animationItem.extend(item)
+            self.animation.addAnimation(anim)
             if endInfo.base[unit_id[0]][unit_id[1]].life == 0:
                 anim, item = self.dieAnimation(unit_id)
                 self.animation.extend(item)
@@ -558,6 +562,7 @@ class HumanReplay(QGraphicsView):
 
     #供结束游戏时的完全清理,需要保存录像请在此之前提取游戏信息
     def reset(self):
+        self.TerminateAni()
         self.emit(SIGNAL("endGame()"))
         self.resetToPlay()
         self.route_ind_list = []
